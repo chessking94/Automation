@@ -1,0 +1,6 @@
+.vscode
+logins
+__pycache__
+config.json
+notes.txt
+SFTP_Sites.csv
