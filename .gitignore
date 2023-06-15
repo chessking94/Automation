@@ -1,6 +1,8 @@
 .vscode
-logins
+conf
+local
+logs
 __pycache__
-config.json
+sftp_config.json
 notes.txt
 SFTP_Sites.csv

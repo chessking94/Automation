@@ -16,7 +16,8 @@ import paramiko
 
 import misc
 
-DELIM = misc.get_config('logDelimiter')
+MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
+DELIM = misc.get_config(MODULE_NAME, 'logDelimiter')
 NL = '\n'
 BOOLEANS = [True, False]
 
@@ -46,7 +47,7 @@ class sftp:
         self.local_in = profile.get('LocalIn').strip()
         self.local_out = profile.get('LocalOut').strip()
 
-        suppress_delimiter = misc.get_config('suppressDelimiter')
+        suppress_delimiter = misc.get_config(MODULE_NAME, 'suppressDelimiter')
         self.suppress_in = profile.get('SuppressIn').strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
         self.suppress_out = profile.get('SuppressOut').strip(f"'{suppress_delimiter} '")
@@ -54,10 +55,10 @@ class sftp:
 
         self.error = None
         self.ssh = None
-        self.key_path = misc.get_config('keyPath')
-        self.log_path = misc.get_config('logPath')
-        self.log_name = f"{misc.get_config('logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
-        self.track_progress = misc.get_config('trackProgress')
+        self.key_path = misc.get_config(MODULE_NAME, 'keyPath')
+        self.log_path = misc.get_config(MODULE_NAME, 'logPath')
+        self.log_name = f"{misc.get_config(MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
+        self.track_progress = misc.get_config(MODULE_NAME, 'trackProgress')
 
     def validate_profile(self) -> str:
         if not self.active:
@@ -121,7 +122,7 @@ class sftp:
                 for ctr, f in enumerate(dir_list):
                     if self.track_progress:
                         if (ctr + 1) % 100 == 0:
-                            logging.info(f'{ctr} files processed out of {tot_ct}')
+                            logging.info(f'{ctr + 1} files processed out of {tot_ct}')
                     if not stat.S_ISDIR(f.st_mode):
                         # TODO: Add support for self.suppress_in
                         remote_file = os.path.join(remote_dir, f.filename).replace('\\', '/')
@@ -169,7 +170,7 @@ def main():
     )
 
     # TODO: Consider converting this to a SQL (Express) DB
-    profile_file = misc.get_config('profileList')
+    profile_file = misc.get_config(MODULE_NAME, 'profileList')
     with open(profile_file, encoding='utf-8') as f:
         dict_reader = csv.DictReader(f, delimiter=',', quotechar='"')
         profiles = [p for p in dict_reader]
