@@ -1,0 +1,10 @@
+{
+	"profileList": "C:/pgp/PGP_Profiles_Template.csv",
+	"publicPath": "C:/pgp//public",
+	"privatePath": "C:/pgp/private",
+	"passphrasePath": "C:/pgp/passphrase",
+	"logDelimiter": ",",
+	"logPath": "C:/logs/automation",
+	"logName": "pgp",
+	"suppressDelimiter": "|"
+}

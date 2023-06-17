@@ -3,6 +3,8 @@ conf
 local
 logs
 __pycache__
-sftp_config.json
 notes.txt
+sftp_config.json
 SFTP_Sites.csv
+pgp_config.json
+PGP_Profiles.csv
