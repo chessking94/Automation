@@ -6,7 +6,6 @@ Version: 1.0
 
 """
 
-import csv
 import datetime as dt
 import logging
 import os
@@ -165,26 +164,3 @@ class sftp:
                         if os.path.isdir(local_dir_archive):
                             archive_name = os.path.join(local_dir_archive, f)
                             os.rename(lf, archive_name)
-
-
-def main():
-    logging.basicConfig(
-        format='%(funcName)s\t%(levelname)s\t%(message)s',
-        level=logging.INFO
-    )
-
-    # TODO: Consider converting this to a SQL (Express) DB
-    profile_file = misc.get_config(MODULE_NAME, 'profileList')
-    with open(profile_file, encoding='utf-8') as f:
-        dict_reader = csv.DictReader(f, delimiter=',', quotechar='"')
-        profiles = [p for p in dict_reader]
-
-    for profile in profiles:
-        print(profile['Name'])
-        conn = sftp(profile)
-        conn.validate_profile()
-        conn.download(delete_ftp=False, write_log=True)
-
-
-if __name__ == '__main__':
-    main()

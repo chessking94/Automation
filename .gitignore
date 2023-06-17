@@ -4,6 +4,7 @@ local
 logs
 __pycache__
 notes.txt
+main.py
 sftp_config.json
 SFTP_Sites.csv
 pgp_config.json

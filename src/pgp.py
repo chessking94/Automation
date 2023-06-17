@@ -6,7 +6,6 @@ Version: 1.0
 
 """
 
-import csv
 import datetime as dt
 import logging
 import os
@@ -112,26 +111,3 @@ class pgp:
                             if os.path.isdir(archive_dir):
                                 archive_name = os.path.join(archive_dir, f)
                                 os.rename(os.path.join(self.decrypt_path, f), archive_name)
-
-
-def main():
-    logging.basicConfig(
-        format='%(funcName)s\t%(levelname)s\t%(message)s',
-        level=logging.INFO
-    )
-
-    # TODO: Consider converting this to a SQL (Express) DB
-    profile_file = misc.get_config(MODULE_NAME, 'profileList')
-    with open(profile_file, encoding='utf-8') as f:
-        dict_reader = csv.DictReader(f, delimiter=',', quotechar='"')
-        profiles = [p for p in dict_reader]
-
-    for profile in profiles:
-        proc = pgp(profile)
-        proc.validate_profile()
-        # proc.encrypt()
-        proc.decrypt()
-
-
-if __name__ == '__main__':
-    main()
