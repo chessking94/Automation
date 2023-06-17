@@ -57,7 +57,7 @@ class sftp:
         self.ssh = None
         self.key_path = misc.get_config(MODULE_NAME, 'keyPath')
         self.log_path = misc.get_config(MODULE_NAME, 'logPath')
-        self.log_name = f"{misc.get_config(MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.txt"
+        self.log_name = f"{misc.get_config(MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
         self.track_progress = misc.get_config(MODULE_NAME, 'trackProgress')
 
     def validate_profile(self) -> str:
@@ -69,6 +69,9 @@ class sftp:
             self.error = f'Missing username|{self.name}'
         if self.pwd is None and self.keyfile is None:
             self.error = f'Missing login method|{self.name}'
+
+        if self.error is not None:
+            logging.critical(self.error)
 
         return self.error
 
@@ -108,6 +111,7 @@ class sftp:
             logfile.write(f'{remote_dir}{DELIM}{local_dir}{DELIM}{filename}{NL}')
 
     def download(self, remote_dir: str = None, local_dir: str = None, delete_ftp: bool = True, write_log: bool = False):
+        # TODO: Validate local_in exists
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
         delete_ftp = delete_ftp if delete_ftp in BOOLEANS else False
@@ -141,6 +145,7 @@ class sftp:
                             logging.debug(f'In main|{f.filename}')
 
     def upload(self, remote_dir: str = None, local_dir: str = None, write_log: bool = False):
+        # TODO: Validate local_out exists
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
