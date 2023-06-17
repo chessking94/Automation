@@ -13,12 +13,11 @@ import os
 
 import pgpy
 
+import constants
 import misc
 
 MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 DELIM = misc.get_config(MODULE_NAME, 'logDelimiter')
-NL = '\n'
-BOOLEANS = [True, False]
 
 
 class pgp:
@@ -62,7 +61,7 @@ class pgp:
         return self.error
 
     def encrypt(self, archive: bool = True):
-        archive = archive if archive in BOOLEANS else False
+        archive = archive if archive in constants.BOOLEANS else False
 
         if self.error is None:
             pub_key, _ = pgpy.PGPKey.from_file(self.public_file)
@@ -83,7 +82,7 @@ class pgp:
                         os.rename(os.path.join(self.encrypt_path, f), archive_name)
 
     def decrypt(self, archive: bool = True):
-        archive = archive if archive in BOOLEANS else False
+        archive = archive if archive in constants.BOOLEANS else False
 
         if self.error is None:
             with open(self.passphrase_file, 'r') as ppfp:

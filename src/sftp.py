@@ -14,12 +14,11 @@ import stat
 
 import paramiko
 
+import constants
 import misc
 
 MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 DELIM = misc.get_config(MODULE_NAME, 'logDelimiter')
-NL = '\n'
-BOOLEANS = [True, False]
 
 
 class sftp:
@@ -108,14 +107,14 @@ class sftp:
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
             logfile.write(f'{self.name}{DELIM}{dte}{DELIM}{tme}{DELIM}{direction}{DELIM}')
-            logfile.write(f'{remote_dir}{DELIM}{local_dir}{DELIM}{filename}{NL}')
+            logfile.write(f'{remote_dir}{DELIM}{local_dir}{DELIM}{filename}{constants.NL}')
 
     def download(self, remote_dir: str = None, local_dir: str = None, delete_ftp: bool = True, write_log: bool = False):
         # TODO: Validate local_in exists
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
-        delete_ftp = delete_ftp if delete_ftp in BOOLEANS else False
-        write_log = write_log if write_log in BOOLEANS else False
+        delete_ftp = delete_ftp if delete_ftp in constants.BOOLEANS else False
+        write_log = write_log if write_log in constants.BOOLEANS else False
 
         if self.error is None:
             self._connectssh()
@@ -148,7 +147,7 @@ class sftp:
         # TODO: Validate local_out exists
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
-        write_log = write_log if write_log in BOOLEANS else False
+        write_log = write_log if write_log in constants.BOOLEANS else False
 
         if self.error is None:
             local_dir_archive = os.path.join(local_dir, 'Archive')
