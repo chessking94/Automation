@@ -13,24 +13,26 @@ import time
 import pandas as pd
 import pyodbc as sql
 
-import constants
-import misc
+from .constants import BOOLEANS as BOOLEANS
+from .misc import get_config as get_config
 
 # TODO: Add general query execution stuff, will need injection defenses
 
-MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
+
+class db_constants:
+    MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
 class db:
     # only have tested this with SQL Server
     def __init__(self):
-        self.conn = sql.connect(misc.get_config(MODULE_NAME, 'connectionString'))
+        self.conn = sql.connect(get_config(db_constants.MODULE_NAME, 'connectionString'))
 
     def __enter__(self):
-        self.conn = sql.connect(misc.get_config(MODULE_NAME, 'connectionString'))
+        self.conn = sql.connect(get_config(db_constants.MODULE_NAME, 'connectionString'))
         return self
 
-    def __exit__(self):
+    def __exit__(self, exception_type, exception_value, traceback):
         self.conn.close()
 
     def _is_job_running(self, job_name: str) -> str:
@@ -56,7 +58,7 @@ WHERE job.name = '{job_name}'
         return pd.read_sql(qry_text, self.conn).values[0][0]
 
     def run_job(self, job_name: str, wait_for_completion: bool = False):
-        wait_for_completion = wait_for_completion if wait_for_completion in constants.BOOLEANS else False
+        wait_for_completion = wait_for_completion if wait_for_completion in BOOLEANS else False
         csr = self.conn.cursor()
         csr.execute(f"EXEC msdb.dbo.sp_start_job @job_name = '{job_name}'")
 

@@ -12,11 +12,13 @@ import os
 
 import pgpy
 
-import constants
-import misc
+from .constants import BOOLEANS as BOOLEANS
+from .misc import get_config as get_config
 
-MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-DELIM = misc.get_config(MODULE_NAME, 'logDelimiter')
+
+class pgp_constants:
+    MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
+    DELIM = get_config(MODULE_NAME, 'logDelimiter')
 
 
 class pgp:
@@ -30,19 +32,19 @@ class pgp:
         self.encrypt_path = profile.get('EncryptPath').strip()
         self.decrypt_path = profile.get('DecryptPath').strip()
 
-        suppress_delimiter = misc.get_config(MODULE_NAME, 'suppressDelimiter')
+        suppress_delimiter = get_config(pgp_constants.MODULE_NAME, 'suppressDelimiter')
         self.suppress_encrypt = profile.get('SuppressEncrypt').strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
         self.suppress_decrypt = profile.get('SuppressDecrypt').strip(f"'{suppress_delimiter} '")
         self.suppress_decrypt = self.suppress_decrypt.split(suppress_delimiter)
 
-        self.public_file = os.path.join(misc.get_config(MODULE_NAME, 'publicPath'), f'{self.name}_public.asc')
-        self.private_file = os.path.join(misc.get_config(MODULE_NAME, 'privatePath'), f'{self.name}_private.asc')
-        self.passphrase_file = os.path.join(misc.get_config(MODULE_NAME, 'passphrasePath'), f'{self.name}_passphrase.txt')
+        self.public_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'publicPath'), f'{self.name}_public.asc')
+        self.private_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'privatePath'), f'{self.name}_private.asc')
+        self.passphrase_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'passphrasePath'), f'{self.name}_passphrase.txt')
 
         self.error = None
-        self.log_path = misc.get_config(MODULE_NAME, 'logPath')
-        self.log_name = f"{misc.get_config(MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_path = get_config(pgp_constants.MODULE_NAME, 'logPath')
+        self.log_name = f"{get_config(pgp_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
 
     def validate_profile(self) -> str:
         if not self.active:
@@ -60,7 +62,7 @@ class pgp:
         return self.error
 
     def encrypt(self, archive: bool = True):
-        archive = archive if archive in constants.BOOLEANS else False
+        archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
             pub_key, _ = pgpy.PGPKey.from_file(self.public_file)
@@ -81,7 +83,7 @@ class pgp:
                         os.rename(os.path.join(self.encrypt_path, f), archive_name)
 
     def decrypt(self, archive: bool = True):
-        archive = archive if archive in constants.BOOLEANS else False
+        archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
             with open(self.passphrase_file, 'r') as ppfp:
@@ -92,6 +94,7 @@ class pgp:
             # TODO: Add support for suppress_decrypt
             for f in decrypt_files:
                 with prv_key.unlock(passphrase):
+                    done = False
                     try:
                         encrypted_data = pgpy.PGPMessage.from_file(os.path.join(self.decrypt_path, f))
                     except ValueError:  # file is already decrypted
