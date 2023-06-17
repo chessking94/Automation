@@ -7,6 +7,7 @@ Version: 1.0
 """
 
 import datetime as dt
+import fnmatch
 import logging
 import os
 
@@ -35,6 +36,7 @@ class pgp:
         suppress_delimiter = get_config(pgp_constants.MODULE_NAME, 'suppressDelimiter')
         self.suppress_encrypt = profile.get('SuppressEncrypt').strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
+        self.suppress_encrypt.append(f'*.{self.extension}')
         self.suppress_decrypt = profile.get('SuppressDecrypt').strip(f"'{suppress_delimiter} '")
         self.suppress_decrypt = self.suppress_decrypt.split(suppress_delimiter)
 
@@ -66,9 +68,15 @@ class pgp:
 
         if self.error is None:
             pub_key, _ = pgpy.PGPKey.from_file(self.public_file)
-            encrypt_files = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
-            # TODO: Add support for suppress_encrypt
-            # TODO: Exclude files with self.extension extension or those already encrypted
+            directory_list = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
+            suppress_list = []
+            for f in os.listdir(self.encrypt_path):
+                if os.path.isfile(os.path.join(self.encrypt_path, f)):
+                    for suppress_item in self.suppress_encrypt:
+                        if fnmatch.fnmatch(f, suppress_item):
+                            suppress_list.append(f)
+            encrypt_files = [x for x in directory_list if x not in suppress_list]
+            # TODO: Exclude files already encrypted
             for f in encrypt_files:
                 data = pgpy.PGPMessage.new(os.path.join(self.encrypt_path, f), file=True)
                 encrypted_data = bytes(pub_key.encrypt(data))
@@ -90,8 +98,15 @@ class pgp:
                 passphrase = ppfp.readline().strip()
 
             prv_key, _ = pgpy.PGPKey.from_file(self.private_file)
-            decrypt_files = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
-            # TODO: Add support for suppress_decrypt
+            directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
+            suppress_list = []
+            for f in os.listdir(self.decrypt_path):
+                if os.path.isfile(os.path.join(self.decrypt_path, f)):
+                    for suppress_item in self.suppress_decrypt:
+                        if fnmatch.fnmatch(f, suppress_item):
+                            suppress_list.append(f)
+            decrypt_files = [x for x in directory_list if x not in suppress_list]
+
             for f in decrypt_files:
                 with prv_key.unlock(passphrase):
                     done = False
