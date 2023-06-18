@@ -61,7 +61,10 @@ class sftp:
         self.log_name = f"{get_config(sftp_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
         self.track_progress = get_config(sftp_constants.MODULE_NAME, 'trackProgress')
 
-    def validate_profile(self) -> str:
+        if self._validate_profile() is not None:
+            logging.critical(self.error)
+
+    def _validate_profile(self) -> str:
         if not self.active:
             self.error = f'Inactive profile|{self.name}'
         if self.host is None:
@@ -70,9 +73,6 @@ class sftp:
             self.error = f'Missing username|{self.name}'
         if self.pwd is None and self.keyfile is None:
             self.error = f'Missing login method|{self.name}'
-
-        if self.error is not None:
-            logging.critical(self.error)
 
         return self.error
 

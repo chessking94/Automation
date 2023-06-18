@@ -48,7 +48,10 @@ class pgp:
         self.log_path = get_config(pgp_constants.MODULE_NAME, 'logPath')
         self.log_name = f"{get_config(pgp_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
 
-    def validate_profile(self) -> str:
+        if self._validate_profile() is not None:
+            logging.critical(self.error)
+
+    def _validate_profile(self) -> str:
         if not self.active:
             self.error = f'Inactive profile|{self.name}'
 
