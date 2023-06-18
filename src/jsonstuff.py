@@ -1,3 +1,11 @@
+"""jsonstuff
+
+Author: Ethan Hunt
+Date: 2023-06-17
+Version: 1.0
+
+"""
+
 import fnmatch
 import logging
 import os

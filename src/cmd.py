@@ -1,4 +1,4 @@
-"""run
+"""cmd
 
 Author: Ethan Hunt
 Date: 2023-06-17
