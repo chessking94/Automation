@@ -10,3 +10,4 @@ SFTP_Sites.csv
 pgp_config.json
 PGP_Profiles.csv
 db_config.json
+fileproc_config.json
