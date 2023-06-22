@@ -6,12 +6,15 @@ Version: 1.0
 
 """
 
+import datetime as dt
 import logging
 import os
 
 import pandas as pd
 from win32com import client
 import xlsxwriter as xl
+
+from .constants import BOOLEANS as BOOLEANS
 
 
 class convert():
@@ -32,9 +35,9 @@ class convert():
             df_filtered = df[columns]
             df_filtered.to_csv(output_file, index=False)
         elif ext in ['.xlsx', '.xls']:
-            logging.warning('Excel conversion not yet developed')
+            logging.warning(f'Excel conversion not yet developed|{filename}')
         else:
-            logging.critical('Other extensions not currently supported')
+            logging.critical(f'Other extensions not currently supported|{filename}')
 
     def csv_to_excel(self, filename: str, delim: str = None):
         if not os.path.isfile(filename):
@@ -42,7 +45,7 @@ class convert():
 
         valid_delim = [',', '\t', '|']
         if delim is not None and delim not in valid_delim:
-            raise NotImplementedError(f"Invalid delimiter: {delim}")
+            raise NotImplementedError(f"invalid delimiter: {delim}")
 
         path = os.path.dirname(filename)
         file = os.path.basename(filename)
@@ -112,3 +115,61 @@ class convert():
 
             if os.path.isdir(os.path.join(path, 'Archive')):
                 os.rename(filename, os.path.join(path, 'Archive', file))
+
+
+class excel():
+    def __init__(self):
+        pass
+
+    def refresh_file(self, filename: str, save_copy: bool = True):
+        save_copy = save_copy if save_copy in BOOLEANS else True
+
+        excel = client.gencache.EnsureDispatch('Excel.Application')
+        wb = excel.Workbooks.Open(filename)
+
+        # refresh all data connections, followed by any separate pivot tables
+        wb.RefreshAll()
+        for sheet in wb.Sheets:
+            for pt in sheet.PivotTables():
+                if pt.PivotCache().RecordCount == 0:
+                    pt.RefreshTable()
+
+        if save_copy:
+            dte = dt.datetime.now().strftime('%Y%m%d %H%M')
+            new_filename = f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}'
+            wb.SaveAs(new_filename)
+        else:
+            wb.Save()
+
+        wb.Close()
+        excel.Quit()
+
+    def run_vba(self, filename: str, macro_name: str = None, save_copy: bool = True):
+        save_copy = save_copy if save_copy in BOOLEANS else True
+
+        excel = client.Dispatch('Excel.Application')
+        wb = excel.Workbooks.Open(filename)
+
+        # run the macro if provided, otherwise run the first (only) macro in the file
+        if macro_name is None:
+            try:
+                macro_ct = wb.VBProject.VBCompenents.Count
+            except AttributeError:
+                macro_ct = 0
+            if macro_ct == 1:
+                macro = wb.VBProject.VBComponents(1)
+                excel.Run(macro.Name)
+            else:
+                raise NotImplementedError(f"No macro_name provided, multiple or no macros in file '{filename}'")
+        else:
+            excel.Application.Run(macro_name)
+
+        if save_copy:
+            dte = dt.datetime.now().strftime('%Y%m%d %H%M')
+            new_filename = f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}'
+            wb.SaveAs(new_filename)
+        else:
+            wb.Save()
+
+        wb.Close()
+        excel.Quit()
