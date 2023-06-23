@@ -8,6 +8,8 @@ Version: 1.0
 
 import logging
 import os
+import shutil
+import subprocess
 import time
 
 import pandas as pd
@@ -69,3 +71,28 @@ WHERE job.name = '{job_name}'
                 time.sleep(10)
                 is_running = self._is_job_running(job_name)
             logging.debug(f'SQL job "{job_name}" ended')
+
+    def script_objects(self, root_path: str, server: str, database: str):
+        if not os.path.isdir(root_path):
+            raise FileNotFoundError(f"path '{root_path}' does not exist")
+
+        try:
+            subprocess.run(['mssql-scripter', '--version'], shell=True)
+        except FileNotFoundError:
+            raise FileNotFoundError('mssql-scripter is not installed in the environment')
+
+        output_path = os.path.join(root_path, database)
+        if os.path.isdir(output_path):
+            shutil.rmtree(output_path)
+        os.mkdir(output_path)
+
+        cmd_text = f'mssql-scripter -S {server} -d {database}'
+        cmd_text = cmd_text + ' --file-per-object'
+        cmd_text = cmd_text + ' --script-create'
+        cmd_text = cmd_text + ' --collation'
+        cmd_text = cmd_text + ' --exclude-headers'
+        cmd_text = cmd_text + ' --display-progress'
+        cmd_text = cmd_text + f' -f {output_path}'
+        if os.getcwd != root_path:
+            os.chdir(root_path)
+        os.system('cmd /C ' + cmd_text)
