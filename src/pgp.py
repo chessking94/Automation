@@ -78,20 +78,27 @@ class pgp:
                     for suppress_item in self.suppress_encrypt:
                         if fnmatch.fnmatch(f, suppress_item):
                             suppress_list.append(f)
-            encrypt_files = [x for x in directory_list if x not in suppress_list]
-            # TODO: Exclude files already encrypted
-            for f in encrypt_files:
-                data = pgpy.PGPMessage.new(os.path.join(self.encrypt_path, f), file=True)
-                encrypted_data = bytes(pub_key.encrypt(data))
-                encrypted_file = os.path.join(self.encrypt_path, f'{f}.{self.extension}')
-                with open(encrypted_file, 'wb') as ef:
-                    ef.write(encrypted_data)
 
-                if archive:
-                    archive_dir = os.path.join(self.encrypt_path, 'Archive')
-                    if os.path.isdir(archive_dir):
-                        archive_name = os.path.join(archive_dir, f)
-                        os.rename(os.path.join(self.encrypt_path, f), archive_name)
+            encrypt_files = [x for x in directory_list if x not in suppress_list]
+            for f in encrypt_files:
+                is_encrypted = False
+                try:
+                    pgpy.PGPMessage.from_file(os.path.join(self.encrypt_path, f))
+                    is_encrypted = True
+                except ValueError:
+                    logging.debug(f'File is already encrypted|{f}')
+                if not is_encrypted:
+                    data = pgpy.PGPMessage.new(os.path.join(self.encrypt_path, f), file=True)
+                    encrypted_data = bytes(pub_key.encrypt(data))
+                    encrypted_file = os.path.join(self.encrypt_path, f'{f}.{self.extension}')
+                    with open(encrypted_file, 'wb') as ef:
+                        ef.write(encrypted_data)
+
+                    if archive:
+                        archive_dir = os.path.join(self.encrypt_path, 'Archive')
+                        if os.path.isdir(archive_dir):
+                            archive_name = os.path.join(archive_dir, f)
+                            os.rename(os.path.join(self.encrypt_path, f), archive_name)
 
     def decrypt(self, archive: bool = True):
         archive = archive if archive in BOOLEANS else False
