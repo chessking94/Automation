@@ -76,11 +76,10 @@ class pgp:
             pub_key, _ = pgpy.PGPKey.from_file(self.public_file)
             directory_list = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
             suppress_list = []
-            for f in os.listdir(self.encrypt_path):
-                if os.path.isfile(os.path.join(self.encrypt_path, f)):
-                    for suppress_item in self.suppress_encrypt:
-                        if fnmatch.fnmatch(f, suppress_item):
-                            suppress_list.append(f)
+            for f in directory_list:
+                for suppress_item in self.suppress_encrypt:
+                    if fnmatch.fnmatch(f, suppress_item):
+                        suppress_list.append(f)
 
             encrypt_files = [x for x in directory_list if x not in suppress_list]
             for f in encrypt_files:
@@ -113,13 +112,12 @@ class pgp:
             prv_key, _ = pgpy.PGPKey.from_file(self.private_file)
             directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
             suppress_list = []
-            for f in os.listdir(self.decrypt_path):
-                if os.path.isfile(os.path.join(self.decrypt_path, f)):
-                    for suppress_item in self.suppress_decrypt:
-                        if fnmatch.fnmatch(f, suppress_item):
-                            suppress_list.append(f)
-            decrypt_files = [x for x in directory_list if x not in suppress_list]
+            for f in directory_list:
+                for suppress_item in self.suppress_decrypt:
+                    if fnmatch.fnmatch(f, suppress_item):
+                        suppress_list.append(f)
 
+            decrypt_files = [x for x in directory_list if x not in suppress_list]
             for f in decrypt_files:
                 with prv_key.unlock(passphrase):
                     done = False
