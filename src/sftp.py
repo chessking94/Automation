@@ -135,21 +135,22 @@ class sftp:
                         if (ctr + 1) % 100 == 0:
                             logging.info(f'{ctr + 1} files processed out of {tot_ct}')
                     if not stat.S_ISDIR(f.st_mode):
-                        # TODO: Add support for self.suppress_in
-                        remote_file = os.path.join(remote_dir, f.filename).replace('\\', '/')
-                        local_file = os.path.join(local_dir, f.filename)
-                        local_file_archive = os.path.join(local_dir, 'Archive', f.filename)
-                        if not os.path.isfile(local_file):
-                            if not os.path.isfile(local_file_archive):
-                                ftp.get(remote_file, local_file)
-                                if write_log:
-                                    self._writelog('GET', remote_dir, local_dir, f.filename)
-                                if delete_ftp:
-                                    ftp.remove(remote_file)
-                            else:
-                                logging.debug(f'In archive|{f.filename}')
-                        else:
-                            logging.debug(f'In main|{f.filename}')
+                        suppress_file = False
+                        for suppress_item in self.suppress_in:
+                            if fnmatch.fnmatch(f.filename, suppress_item):
+                                suppress_file = True
+
+                        if not suppress_file:
+                            remote_file = os.path.join(remote_dir, f.filename).replace('\\', '/')
+                            local_file = os.path.join(local_dir, f.filename)
+                            local_file_archive = os.path.join(local_dir, 'Archive', f.filename)
+                            if not os.path.isfile(local_file):
+                                if not os.path.isfile(local_file_archive):
+                                    ftp.get(remote_file, local_file)
+                                    if write_log:
+                                        self._writelog('GET', remote_dir, local_dir, f.filename)
+                                    if delete_ftp:
+                                        ftp.remove(remote_file)
 
     def upload(self, remote_dir: str = None, local_dir: str = None, write_log: bool = False):
         remote_dir = self.remote_out if remote_dir is None else remote_dir
