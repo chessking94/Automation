@@ -7,6 +7,7 @@ Version: 1.0
 """
 
 import datetime as dt
+import fnmatch
 import logging
 import os
 import stat
@@ -161,16 +162,22 @@ class sftp:
         if self.error is None:
             local_dir_archive = os.path.join(local_dir, 'Archive')
             local_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
-            if len(local_files) > 0:
-                # TODO: Add support for self.suppress_out
+            suppress_list = []
+            for f in local_files:
+                for suppress_item in self.suppress_out:
+                    if fnmatch.fnmatch(f, suppress_item):
+                        suppress_list.append(f)
+
+            upload_files = [x for x in local_files if x not in suppress_list]
+            if len(upload_files) > 0:
                 self._connectssh()
                 with self.ssh.open_sftp() as ftp:
                     ftp.chdir(remote_dir)
-                    for f in local_files:
+                    for f in upload_files:
                         lf = os.path.join(local_dir, f)
                         ftp.put(lf, remote_dir)
                         if write_log:
-                            self._writelog('PUT', remote_dir, local_dir, f.filename)
+                            self._writelog('PUT', remote_dir, local_dir, f)
                         if os.path.isdir(local_dir_archive):
                             archive_name = os.path.join(local_dir_archive, f)
                             os.rename(lf, archive_name)
