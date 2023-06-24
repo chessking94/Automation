@@ -115,11 +115,13 @@ class sftp:
             logfile.write(f'{remote_dir}{sftp_constants.DELIM}{local_dir}{sftp_constants.DELIM}{filename}{NL}')
 
     def download(self, remote_dir: str = None, local_dir: str = None, delete_ftp: bool = True, write_log: bool = False):
-        # TODO: Validate local_in exists
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
         delete_ftp = delete_ftp if delete_ftp in BOOLEANS else False
         write_log = write_log if write_log in BOOLEANS else False
+
+        if not os.path.isdir(local_dir):
+            raise FileNotFoundError
 
         if self.error is None:
             self._connectssh()
@@ -149,10 +151,12 @@ class sftp:
                             logging.debug(f'In main|{f.filename}')
 
     def upload(self, remote_dir: str = None, local_dir: str = None, write_log: bool = False):
-        # TODO: Validate local_out exists
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
+
+        if not os.path.isdir(local_dir):
+            raise FileNotFoundError
 
         if self.error is None:
             local_dir_archive = os.path.join(local_dir, 'Archive')
