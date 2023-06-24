@@ -1,4 +1,7 @@
 {
 	"referenceFile": "C:/reference/directorymonitoring.csv",
-	"referenceDelimiter": ","
+	"referenceDelimiter": ",",
+	"logDelimiter": ",",
+	"logPath": "C:/logs/automation",
+	"logName": "directorymonitoring"
 }
