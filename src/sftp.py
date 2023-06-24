@@ -15,7 +15,7 @@ import paramiko
 
 from .constants import NL as NL
 from .constants import BOOLEANS as BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config as get_config, csv_to_json
 
 
 class sftp_constants:
@@ -24,8 +24,11 @@ class sftp_constants:
 
 
 class sftp:
-    def __init__(self, profile: dict):
-        self.name = profile.get('Name').strip()
+    def __init__(self, profile_name: str):
+        profile_file = get_config(sftp_constants.MODULE_NAME, 'profileList')
+        profiles = csv_to_json(profile_file)
+        profile = profiles[profile_name]
+        self.name = profile_name
         self.active = profile.get('Active').strip()
         self.active = True if self.active == '1' else False
         self.login_type = profile.get('LoginType').strip()

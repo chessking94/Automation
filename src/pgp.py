@@ -14,7 +14,7 @@ import os
 import pgpy
 
 from .constants import BOOLEANS as BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config as get_config, csv_to_json
 
 
 class pgp_constants:
@@ -23,8 +23,11 @@ class pgp_constants:
 
 
 class pgp:
-    def __init__(self, profile: dict):
-        self.name = profile.get('Name').strip().upper()
+    def __init__(self, profile_name: str):
+        profile_file = get_config(pgp_constants.MODULE_NAME, 'profileList')
+        profiles = csv_to_json(profile_file)
+        profile = profiles[profile_name]
+        self.name = profile_name
         self.active = profile.get('Active').strip()
         self.active = True if self.active == '1' else False
         self.type = profile.get('Type').strip().upper()
