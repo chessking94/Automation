@@ -28,8 +28,8 @@ def csv_to_json(csvfile: str) -> dict:
     Return a nested dictionary object from a csv where the first column is
     the key and subsequent columns are nested key:value pairs for that key
     """
-    # TODO: Is there a way to verify that the first column has unique values? Process will break otherwise
     nested_dict = defaultdict(dict)
+    key_set = set()
 
     with open(csvfile, mode='r', encoding='utf-8') as file:
         reader = csv.reader(file)
@@ -37,6 +37,10 @@ def csv_to_json(csvfile: str) -> dict:
 
         for row in reader:
             key = row[0]  # Use the first column as the key
+            if key in key_set:
+                raise ValueError(f"duplicate key '{key}' present")
+            key_set.add(key)
+
             inner_dict = {header: value for header, value in zip(headers[1:], row[1:])}
             nested_dict[key] = inner_dict
 
