@@ -42,6 +42,7 @@ class sftp:
             self.port = 22
         self.usr = profile.get('Username').strip()
         self.pwd = profile.get('Password').strip()
+        self.passphrase = profile.get('Passphrase').strip()  # TODO: Verify this is correct and doesn't need additional handling in login somewhere
         self.keyfile = profile.get('KeyFile').strip()
 
         root = '/'
@@ -99,8 +100,9 @@ class sftp:
                     hostname=self.host,
                     port=self.port,
                     username=self.usr,
-                    key_filename=os.path.join(self.key_path, self.keyfile),
-                    passphrase=self.pwd
+                    password=self.pwd,
+                    key_filename=os.path.join(self.key_path, self.keyfile),  # TODO: Consider some kind of error handling if not an OPENSSH key file
+                    passphrase=self.passphrase
                 )
         except paramiko.AuthenticationException:
             logging.critical(f'AuthenticationException|{self.host}')
@@ -152,25 +154,34 @@ class sftp:
                                     if delete_ftp:
                                         ftp.remove(remote_file)
 
-    def upload(self, remote_dir: str = None, local_dir: str = None, write_log: bool = False):
+    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, write_log: bool = False):
+        # TODO: Add support for passing a wildcard for file uploads (or even an override for file suppression)
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
+
+        # validate local_files and make sure its the proper data type
+        local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
+        local_files = local_files if isinstance(local_files, list) else []  # convert to empty list if not already a list type
 
         if not os.path.isdir(local_dir):
             raise FileNotFoundError
 
         if self.error is None:
-            local_dir_archive = os.path.join(local_dir, 'Archive')
-            local_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
-            suppress_list = []
-            for f in local_files:
-                for suppress_item in self.suppress_out:
-                    if fnmatch.fnmatch(f, suppress_item):
-                        suppress_list.append(f)
+            if len(local_files) == 0:
+                local_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
+                suppress_list = []
+                for f in local_files:
+                    for suppress_item in self.suppress_out:
+                        if fnmatch.fnmatch(f, suppress_item):
+                            suppress_list.append(f)
 
-            upload_files = [x for x in local_files if x not in suppress_list]
+                upload_files = [x for x in local_files if x not in suppress_list]
+            else:
+                upload_files = [x for x in local_files if os.path.isfile(os.path.join(local_files, x))]
+
             if len(upload_files) > 0:
+                local_dir_archive = os.path.join(local_dir, 'Archive')
                 self._connectssh()
                 with self.ssh.open_sftp() as ftp:
                     ftp.chdir(remote_dir)
