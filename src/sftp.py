@@ -42,7 +42,7 @@ class sftp:
             self.port = 22
         self.usr = profile.get('Username').strip()
         self.pwd = profile.get('Password').strip()
-        self.passphrase = profile.get('Passphrase').strip()  # TODO: Verify this is correct and doesn't need additional handling in login somewhere
+        self.passphrase = profile.get('Passphrase').strip()
         self.keyfile = profile.get('KeyFile').strip()
 
         root = '/'
@@ -72,12 +72,15 @@ class sftp:
     def _validate_profile(self) -> str:
         if not self.active:
             self.error = f'Inactive profile|{self.name}'
-        if self.host is None:
+        if not self.host:
             self.error = f'Missing host|{self.name}'
-        if self.usr is None:
+        if not self.usr:
             self.error = f'Missing username|{self.name}'
-        if self.pwd is None and self.keyfile is None:
+        if not self.pwd and not self.keyfile:
             self.error = f'Missing login method|{self.name}'
+        if self.login_type.upper() == 'KEY':
+            if not os.path.isfile(os.path.join(self.key_path, self.keyfile)) or not self.keyfile:
+                self.error = f'Missing key file|{self.name}'
 
         return self.error
 
@@ -117,7 +120,17 @@ class sftp:
             logfile.write(f'{self.name}{sftp_constants.DELIM}{dte}{sftp_constants.DELIM}{tme}{sftp_constants.DELIM}{direction}{sftp_constants.DELIM}')
             logfile.write(f'{remote_dir}{sftp_constants.DELIM}{local_dir}{sftp_constants.DELIM}{filename}{NL}')
 
+    def _listsftpdir(self, remote_dir: str) -> list:
+        self._connectssh()
+        with self.ssh.open_sftp() as ftp:
+            ftp.chdir(remote_dir)
+            dir_list = ftp.listdir_attr(remote_dir)
+
+        file_list = [x.filename for x in dir_list if not stat.S_ISDIR(x.st_mode)]
+        return file_list
+
     def download(self, remote_dir: str = None, local_dir: str = None, delete_ftp: bool = True, write_log: bool = False):
+        # TODO: download specific file masks
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
         delete_ftp = delete_ftp if delete_ftp in BOOLEANS else False
@@ -155,7 +168,6 @@ class sftp:
                                         ftp.remove(remote_file)
 
     def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, write_log: bool = False):
-        # TODO: Add support for passing a wildcard for file uploads (or even an override for file suppression)
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
@@ -169,6 +181,7 @@ class sftp:
 
         if self.error is None:
             if len(local_files) == 0:
+                # no specific files passed, use standard config parameters
                 local_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
                 suppress_list = []
                 for f in local_files:
@@ -178,7 +191,14 @@ class sftp:
 
                 upload_files = [x for x in local_files if x not in suppress_list]
             else:
-                upload_files = [x for x in local_files if os.path.isfile(os.path.join(local_files, x))]
+                # specific files/wildcards provided, bypass config parameters
+                dir_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
+                upload_list = []
+                for f in dir_files:
+                    for include_file in local_files:
+                        if fnmatch.fnmatch(f, include_file):
+                            upload_list.append(f)
+                upload_files = [x for x in upload_list if os.path.isfile(os.path.join(local_dir, x))]
 
             if len(upload_files) > 0:
                 local_dir_archive = os.path.join(local_dir, 'Archive')
@@ -187,7 +207,8 @@ class sftp:
                     ftp.chdir(remote_dir)
                     for f in upload_files:
                         lf = os.path.join(local_dir, f)
-                        ftp.put(lf, remote_dir)
+                        uf = remote_dir + '/' + f if remote_dir[-1] != '/' else remote_dir + f  # ok to hard-code / here, it's sftp
+                        ftp.put(lf, uf)
                         if write_log:
                             self._writelog('PUT', remote_dir, local_dir, f)
                         if os.path.isdir(local_dir_archive):
