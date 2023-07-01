@@ -6,6 +6,7 @@ Version: 1.0
 
 """
 
+import csv
 import datetime as dt
 import logging
 import os
@@ -15,8 +16,6 @@ from win32com import client
 import xlsxwriter as xl
 
 from .constants import BOOLEANS as BOOLEANS
-
-# TODO: Add delimiter change support to convert()
 
 
 class convert():
@@ -33,7 +32,7 @@ class convert():
             if os.path.isfile(output_file):
                 raise FileExistsError
 
-            df = pd.read_csv(filename, dtype=str)
+            df = pd.read_csv(filename, dtype=str)  # TODO: May need to get away from this, might only really support csv
             df_filtered = df[columns]
             df_filtered.to_csv(output_file, index=False)
         elif ext in ['.xlsx', '.xls']:
@@ -42,6 +41,33 @@ class convert():
         else:
             output_file = None
             logging.critical(f'Other extensions not currently supported|{filename}')
+
+        return output_file
+
+    def change_delimiter(self, filename: str, old_delim: str = None, new_delim: str = None) -> str:
+        if not os.path.isfile(filename):
+            raise FileNotFoundError
+
+        output_file = f'{os.path.splitext(filename)[0]}_delimiter{os.path.splitext(filename)[1]}'
+        if os.path.isfile(output_file):
+            raise FileExistsError
+
+        if new_delim is None or len(new_delim) == 0:
+            raise NotImplementedError(f"invalid delimiter: {new_delim}")
+
+        if old_delim is None:
+            logging.warning(f'old_delim is None|{filename}')
+            with open(filename, mode='r', encoding='utf-8') as f:
+                sniffer = csv.Sniffer()
+                dialect = sniffer.sniff(f.readline())
+            old_delim = dialect.delimiter
+            logging.warning(f'old_delim guess|{old_delim}')
+
+        with open(filename, mode='r', newline='\n') as inpfile:
+            reader = csv.reader(inpfile, delimiter=old_delim, quotechar='"')
+            with open(output_file, mode='w', newline='') as outfile:
+                writer = csv.writer(outfile, delimiter=new_delim)
+                writer.writerows(reader)
 
         return output_file
 
@@ -61,7 +87,7 @@ class convert():
         if os.path.isfile(output_file):
             logging.warning(f'File {file} has already been converted to Excel')
         else:
-            df = pd.read_csv(filename)
+            df = pd.read_csv(filename)  # TODO: May need to get away from this, might only really support csv
             wb = xl.Workbook(output_file)
             ws = wb.add_worksheet()
             text_format = wb.add_format({'num_format': '@'})
