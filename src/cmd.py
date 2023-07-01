@@ -18,7 +18,13 @@ class cmd:
     def __init__(self):
         pass
 
-    def run_script(self, program_name: str, script_path: str, script_name: str, parameters: str = None):
+    def run_script(self, program_name: str, script_path: str, script_name: str, parameters: str = None) -> int:
+        if not os.path.isdir(script_path):
+            raise FileNotFoundError
+
+        if not os.path.isfile(os.path.join(script_path, script_name)):
+            raise FileNotFoundError
+
         program_name = program_name if isinstance(program_name, str) else None
         cmd_text = f'{program_name} {script_name}' if program_name is not None else script_name
         cmd_text = f'{cmd_text} {parameters}' if parameters is not None else cmd_text
@@ -29,5 +35,7 @@ class cmd:
         logging.debug(start_log)
         if os.getcwd != script_path:
             os.chdir(script_path)
-        os.system('cmd /C ' + cmd_text)
+        rtnval = os.system('cmd /C ' + cmd_text)
         logging.debug(end_log)
+
+        return rtnval
