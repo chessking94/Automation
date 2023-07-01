@@ -48,9 +48,9 @@ class convert():
             df = pd.read_csv(filename, dtype=str, sep=delim)
             df_filtered = df[columns]
             df_filtered.to_csv(output_file, index=False)
-        elif ext in ['.xlsx', '.xls']:
-            # TODO: Extract Excel columns
-            logging.warning(f'Excel conversion not yet developed|{filename}')
+        elif ext in ['.xlsx', '.xls', '.xlsm']:
+            df = pd.read_excel(filename, engine='openpyxl')
+            df.to_excel(output_file, columns=columns, index=False)
         else:
             output_file = None
             logging.critical(f'Other extensions not currently supported|{filename}')
