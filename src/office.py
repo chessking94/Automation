@@ -16,11 +16,20 @@ from win32com import client
 import xlsxwriter as xl
 
 from .constants import BOOLEANS as BOOLEANS
+from .constants import VALID_DELIMS as VALID_DELIMS
 
 
 class convert():
     def __init__(self):
         pass
+
+    def _guessdelimiter(self, filename: str) -> str:
+        with open(filename, mode='r', encoding='utf-8') as f:
+            sniffer = csv.Sniffer()
+            dialect = sniffer.sniff(f.readline())
+        delim = dialect.delimiter
+        logging.debug(f'delim guess|{delim}')
+        return delim
 
     def extract_columns(self, filename: str, columns: list) -> str:
         if not os.path.isfile(filename):
@@ -32,7 +41,11 @@ class convert():
             if os.path.isfile(output_file):
                 raise FileExistsError
 
-            df = pd.read_csv(filename, dtype=str)  # TODO: May need to get away from this, might only really support csv
+            delim = self._guessdelimiter(filename)
+            if delim not in VALID_DELIMS:
+                raise NotImplementedError(f"invalid delimiter: {delim}")
+
+            df = pd.read_csv(filename, dtype=str, sep=delim)
             df_filtered = df[columns]
             df_filtered.to_csv(output_file, index=False)
         elif ext in ['.xlsx', '.xls']:
@@ -55,13 +68,7 @@ class convert():
         if new_delim is None or len(new_delim) == 0:
             raise NotImplementedError(f"invalid delimiter: {new_delim}")
 
-        if old_delim is None:
-            logging.warning(f'old_delim is None|{filename}')
-            with open(filename, mode='r', encoding='utf-8') as f:
-                sniffer = csv.Sniffer()
-                dialect = sniffer.sniff(f.readline())
-            old_delim = dialect.delimiter
-            logging.warning(f'old_delim guess|{old_delim}')
+        old_delim = self._guessdelimiter(filename) if old_delim is None else old_delim
 
         with open(filename, mode='r', newline='\n') as inpfile:
             reader = csv.reader(inpfile, delimiter=old_delim, quotechar='"')
@@ -75,8 +82,8 @@ class convert():
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
-        valid_delim = [',', '\t', '|']
-        if delim is not None and delim not in valid_delim:
+        delim = self._guessdelimiter(filename) if delim is None else delim
+        if delim not in VALID_DELIMS:
             raise NotImplementedError(f"invalid delimiter: {delim}")
 
         path = os.path.dirname(filename)
@@ -87,7 +94,7 @@ class convert():
         if os.path.isfile(output_file):
             logging.warning(f'File {file} has already been converted to Excel')
         else:
-            df = pd.read_csv(filename)  # TODO: May need to get away from this, might only really support csv
+            df = pd.read_csv(filename, sep=delim)
             wb = xl.Workbook(output_file)
             ws = wb.add_worksheet()
             text_format = wb.add_format({'num_format': '@'})
@@ -129,8 +136,7 @@ class convert():
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
-        valid_delim = [',', '\t', '|']
-        if delim not in valid_delim:
+        if delim not in VALID_DELIMS:
             raise NotImplementedError(f"Delimiter '{delim}' not supported")
 
         valid_ext = ['.xlsx', '.xls', '.xlsm']
