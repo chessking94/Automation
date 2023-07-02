@@ -121,5 +121,16 @@ class TestConvert(unittest.TestCase):
         self.assertEqual(self.result_file, cvrt_filename)
 
 
+# class TestExcel(unittest.TestCase):
+#     def setUp(self):
+#         self.cvrt = office.excel()
+#         self.result_file = ''
+
+#     def tearDown(self):
+#         self.result_file = '' if self.result_file is None else self.result_file
+#         if os.path.isfile(self.result_file):
+#             os.remove(self.result_file)
+
+
 if __name__ == '__main__':
     unittest.main()

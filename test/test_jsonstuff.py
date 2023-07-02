@@ -25,18 +25,15 @@ class TestJsonstuff(unittest.TestCase):
     def test_reformat_json_single_file(self):
         fname = 'jsonstuff_test1.json'
         self.file_list = jsonstuff.reformat_json(FILE_DIR, fname)
-
         self.assertEqual(len(self.file_list), 1)
 
     def test_reformat_json_already_formatted(self):
         fname = 'jsonstuff_test2.json'
         self.file_list = jsonstuff.reformat_json(FILE_DIR, fname)
-
         self.assertEqual(len(self.file_list), 0)
 
     def test_reformat_json_multiple_files(self):
         self.file_list = jsonstuff.reformat_json(FILE_DIR)
-
         self.assertEqual(len(self.file_list), 3)
 
 

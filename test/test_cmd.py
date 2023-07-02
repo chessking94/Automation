@@ -13,17 +13,14 @@ class TestCmd(unittest.TestCase):
 
     def test_run_script_with_parameters(self):
         test_val = self.script.run_script('py', FILE_DIR, 'cmd_script.py', '-a1 -b2')
-
         self.assertEqual(test_val, 0)
 
     def test_run_script_without_parameters(self):
         test_val = self.script.run_script('py', FILE_DIR, 'cmd_script.py')
-
         self.assertNotEqual(test_val, 0)
 
     def test_run_script_without_program_name(self):
         test_val = self.script.run_script(None, FILE_DIR, 'cmd_script.bat')
-
         self.assertEqual(test_val, 0)
 
     def test_run_script_with_invalid_script_path(self):
