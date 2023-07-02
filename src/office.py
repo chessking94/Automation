@@ -32,15 +32,20 @@ class convert():
         return delim
 
     def extract_columns(self, filename: str, columns: list) -> str:
+        # validate columns and make sure its the proper data type
+        columns = [columns] if isinstance(columns, str) else columns  # convert single column to a list
+        if not isinstance(columns, list):
+            raise TypeError('invalid columns')
+
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
         output_file = f'{os.path.splitext(filename)[0]}_filtered{os.path.splitext(filename)[1]}'
+        if os.path.isfile(output_file):
+            raise FileExistsError
+
         ext = os.path.splitext(filename)[1].lower()
         if ext in ['.csv', '.txt']:
-            if os.path.isfile(output_file):
-                raise FileExistsError
-
             delim = self._guessdelimiter(filename)
             if delim not in VALID_DELIMS:
                 raise NotImplementedError(f"invalid delimiter: {delim}")
@@ -110,28 +115,6 @@ class convert():
 
         return output_file
 
-    def word_to_pdf(self, filename: str) -> str:
-        if not os.path.isfile(filename):
-            raise FileNotFoundError
-
-        valid_ext = ['.docx', '.doc']
-        if os.path.splitext(filename)[1] not in valid_ext:
-            raise NotImplementedError(f"Extension '{os.path.splitext(filename)[1]}' not supported")
-
-        path = os.path.dirname(filename)
-        file = os.path.basename(filename)
-        new_file = f'{os.path.splitext(file)[0]}.pdf'
-        output_file = os.path.join(path, new_file)
-
-        word = client.Dispatch('Word.Application')  # requires Office to be installed
-        if os.path.isfile(output_file):
-            os.remove(output_file)
-        worddoc = word.Documents.Open(filename, ReadOnly=1)
-        worddoc.SaveAs(output_file, FileFormat=17)
-        worddoc.Close()
-
-        return output_file
-
     def excel_to_csv(self, filename: str, delim: str = ',') -> str:
         if not os.path.isfile(filename):
             raise FileNotFoundError
@@ -160,6 +143,28 @@ class convert():
 
             if os.path.isdir(os.path.join(path, 'Archive')):
                 os.rename(filename, os.path.join(path, 'Archive', file))
+
+        return output_file
+
+    def word_to_pdf(self, filename: str) -> str:
+        if not os.path.isfile(filename):
+            raise FileNotFoundError
+
+        valid_ext = ['.docx', '.doc']
+        if os.path.splitext(filename)[1] not in valid_ext:
+            raise NotImplementedError(f"Extension '{os.path.splitext(filename)[1]}' not supported")
+
+        path = os.path.dirname(filename)
+        file = os.path.basename(filename)
+        new_file = f'{os.path.splitext(file)[0]}.pdf'
+        output_file = os.path.join(path, new_file)
+
+        word = client.Dispatch('Word.Application')  # requires Office to be installed
+        if os.path.isfile(output_file):
+            os.remove(output_file)
+        worddoc = word.Documents.Open(filename, ReadOnly=1)
+        worddoc.SaveAs(output_file, FileFormat=17)
+        worddoc.Close()
 
         return output_file
 
