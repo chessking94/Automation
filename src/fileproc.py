@@ -18,6 +18,7 @@ from .constants import NL as NL
 from .misc import get_config as get_config
 
 # TODO: Mass move files from one location to another? Perhaps too general and shutil is good enough
+# TODO: Handling/logging around receiving servicer files
 
 
 class monitoring_constants:

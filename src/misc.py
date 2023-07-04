@@ -15,6 +15,7 @@ from .constants import VALID_DELIMS as VALID_DELIMS
 
 
 def get_config(module: str, key: str, path_override: str = None) -> str:
+    # TODO: May need to add an optional test parameter to override prod location and file name
     # TODO: Would it make more sense to have the config path be a parameter somewhere? Global variable? Config parameter?
     if path_override is None:
         config_path = os.path.dirname(__file__)
