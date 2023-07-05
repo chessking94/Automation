@@ -1,9 +1,0 @@
-{
-	"logDelimiter": ",",
-	"logPath": "C:/logs/automation",
-	"logName": "ftp",
-	"keyPath": "C:/keys",
-	"suppressDelimiter": "|",
-	"profileList": "C:/sftp/SFTP_Sites_Template.csv",
-	"trackProgress": true
-}

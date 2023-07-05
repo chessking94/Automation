@@ -14,56 +14,45 @@ import os
 import pgpy
 
 from .constants import BOOLEANS as BOOLEANS
-from .misc import get_config as get_config, csv_to_json
+from .misc import get_config as get_config
+from .secrets import keepass
 
 
 class pgp_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config(MODULE_NAME, 'logDelimiter')
+    DELIM = get_config('logDelimiter')
 
 
 class pgp:
     def __init__(self, profile_name: str):
-        profile_file = get_config(pgp_constants.MODULE_NAME, 'profileList')
-        profiles = csv_to_json(profile_file)
-        profile = profiles[profile_name]
+        kp = keepass(
+            filename=get_config('keepassFile'),
+            password=os.getenv('AUTOMATIONPASSWORD'),
+            group_title=pgp_constants.MODULE_NAME,
+            entry_title=profile_name
+        )
         self.name = profile_name
-        self.active = profile.get('Active').strip()
-        self.active = True if self.active == '1' else False
-        self.type = profile.get('Type').strip().upper()
-        self.type = self.type if self.type in ['PUBLIC', 'PRIVATE'] else 'PUBLIC'
-        self.extension = profile.get('Extension').strip()
-        self.encrypt_path = profile.get('EncryptPath').strip()
-        self.decrypt_path = profile.get('DecryptPath').strip()
+        self.extension = kp.getcustomproperties('EncryptedExtension').strip().lower()
+        self.encrypt_path = kp.getcustomproperties('EncryptPathDefault').strip()
+        self.decrypt_path = kp.getcustomproperties('DecryptPathDefault').strip()
 
-        suppress_delimiter = get_config(pgp_constants.MODULE_NAME, 'suppressDelimiter')
-        self.suppress_encrypt = profile.get('SuppressEncrypt').strip(f"'{suppress_delimiter} '")
+        suppress_delimiter = get_config('suppressDelimiter')
+        self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault').strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
         self.suppress_encrypt.append(f'*.{self.extension}')
-        self.suppress_decrypt = profile.get('SuppressDecrypt').strip(f"'{suppress_delimiter} '")
+        self.suppress_decrypt = kp.getcustomproperties('SuppressDecryptDefault').strip(f"'{suppress_delimiter} '")
         self.suppress_decrypt = self.suppress_decrypt.split(suppress_delimiter)
 
-        self.public_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'publicPath'), f'{self.name}_public.asc')
-        self.private_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'privatePath'), f'{self.name}_private.asc')
-        self.passphrase_file = os.path.join(get_config(pgp_constants.MODULE_NAME, 'passphrasePath'), f'{self.name}_passphrase.txt')
+        self.passphrase = kp.getgeneral('Password')
 
         self.error = None
-        self.log_path = get_config(pgp_constants.MODULE_NAME, 'logPath')
-        self.log_name = f"{get_config(pgp_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_path = os.path.join(get_config('logRoot'), pgp_constants.MODULE_NAME)
+        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
 
         if self._validate_profile() is not None:
             logging.critical(self.error)
 
     def _validate_profile(self) -> str:
-        if not self.active:
-            self.error = f'Inactive profile|{self.name}'
-
-        if self.type == 'PUBLIC' and not os.path.isdir(self.encrypt_path):
-            self.error = f'Encryption path does not exist|{self.name}'
-
-        if self.type == 'PRIVATE' and not os.path.isdir(self.decrypt_path):
-            self.error = f'Decryption path does not exist|{self.name}'
-
         if self.error is not None:
             logging.critical(self.error)
 
@@ -73,7 +62,7 @@ class pgp:
         archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
-            pub_key, _ = pgpy.PGPKey.from_file(self.public_file)
+            pub_key, _ = pgpy.PGPKey.from_file(self.public_file)  # TODO: Switch to block text instead of file
             directory_list = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
             suppress_list = []
             for f in directory_list:
@@ -106,10 +95,7 @@ class pgp:
         archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
-            with open(self.passphrase_file, 'r') as ppfp:
-                passphrase = ppfp.readline().strip()
-
-            prv_key, _ = pgpy.PGPKey.from_file(self.private_file)
+            prv_key, _ = pgpy.PGPKey.from_file(self.private_file)  # TODO: Switch to block text instead of file
             directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
             suppress_list = []
             for f in directory_list:
@@ -119,7 +105,7 @@ class pgp:
 
             decrypt_files = [x for x in directory_list if x not in suppress_list]
             for f in decrypt_files:
-                with prv_key.unlock(passphrase):
+                with prv_key.unlock(self.passphrase):
                     done = False
                     try:
                         encrypted_data = pgpy.PGPMessage.from_file(os.path.join(self.decrypt_path, f))

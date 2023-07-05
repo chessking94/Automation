@@ -1,2 +1,0 @@
-Name,Active,LoginType,Host,Port,Username,Password,Passphrase,KeyFile,RemoteIn,RemoteOut,LocalIn,LocalOut,SuppressIn,SuppressOut
-Rebex Test,1,Normal,test.rebex.net,22,demo,password,,,/,,C:\FileProcessing\Import,C:\FileProcessing\Export,,

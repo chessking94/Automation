@@ -16,7 +16,8 @@ import paramiko
 
 from .constants import NL as NL
 from .constants import BOOLEANS as BOOLEANS
-from .misc import get_config as get_config, csv_to_json
+from .misc import get_config as get_config
+from .secrets import keepass
 
 
 class sftp_constants:
@@ -25,62 +26,59 @@ class sftp_constants:
 
 
 class sftp:
-    def __init__(self, profile_name: str):
-        profile_file = get_config(sftp_constants.MODULE_NAME, 'profileList')
-        profiles = csv_to_json(profile_file)
-        profile = profiles[profile_name]
+    def __init__(self, profile_name: str, track_progress: bool = True):
+        kp = keepass(
+            filename=get_config('keepassFile'),
+            password=os.getenv('AUTOMATIONPASSWORD'),
+            group_title=sftp_constants.MODULE_NAME,
+            entry_title=profile_name
+        )
         self.name = profile_name
-        self.active = profile.get('Active').strip()
-        self.active = True if self.active == '1' else False
-        self.login_type = profile.get('LoginType').strip()
-        self.login_type = self.login_type.upper() if self.login_type.upper() in ['NORMAL', 'KEY'] else 'NORMAL'
-        self.host = profile.get('Host').strip()
-        self.port = profile.get('Port').strip()
+        self.login_type = kp.getcustomproperties('LoginType').strip().upper()
+        self.login_type = self.login_type if self.login_type in ['NORMAL', 'KEY'] else 'NORMAL'
+        self.host = kp.getgeneral('url').strip()
+        self.port = kp.getcustomproperties('Port')
         try:
             self.port = int(self.port)
         except ValueError:
             self.port = 22
-        self.usr = profile.get('Username').strip()
-        self.pwd = profile.get('Password').strip()
-        self.passphrase = profile.get('Passphrase').strip()
-        self.keyfile = profile.get('KeyFile').strip()
+        self.usr = kp.getgeneral('Username').strip()
+        self.pwd = kp.getgeneral('Password').strip()
+        self.passphrase = kp.getcustomproperties('Passphrase').strip()
+        self.private_key = kp.readattachment('OPENSSH_PRIVATE.asc')
 
         root = '/'
-        self.remote_in = profile.get('RemoteIn').strip()
+        self.remote_in = kp.getcustomproperties('RemoteInDefault').strip()
         self.remote_in = root if self.remote_in == '' else self.remote_in
-        self.remote_out = profile.get('RemoteOut').strip()
+        self.remote_out = kp.getcustomproperties('RemoteOutDefault').strip()
         self.remote_out = root if self.remote_out == '' else self.remote_out
-        self.local_in = profile.get('LocalIn').strip()
-        self.local_out = profile.get('LocalOut').strip()
+        self.local_in = kp.getcustomproperties('LocalInDefault').strip()
+        self.local_out = kp.getcustomproperties('LocalOutDefault').strip()
 
-        suppress_delimiter = get_config(sftp_constants.MODULE_NAME, 'suppressDelimiter')
-        self.suppress_in = profile.get('SuppressIn').strip(f"'{suppress_delimiter} '")
+        suppress_delimiter = get_config('suppressDelimiter')
+        self.suppress_in = kp.getcustomproperties('SuppressInDefault').strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
-        self.suppress_out = profile.get('SuppressOut').strip(f"'{suppress_delimiter} '")
+        self.suppress_out = kp.getcustomproperties('SuppressOutDefault').strip(f"'{suppress_delimiter} '")
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
         self.error = None
         self.ssh = None
-        self.key_path = get_config(sftp_constants.MODULE_NAME, 'keyPath')
-        self.log_path = get_config(sftp_constants.MODULE_NAME, 'logPath')
-        self.log_name = f"{get_config(sftp_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
-        self.track_progress = get_config(sftp_constants.MODULE_NAME, 'trackProgress')
+        self.log_path = os.path.join(get_config('logRoot'), sftp_constants.MODULE_NAME)
+        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.track_progress = track_progress if track_progress in BOOLEANS else True
 
         if self._validate_profile() is not None:
             logging.critical(self.error)
 
     def _validate_profile(self) -> str:
-        if not self.active:
-            self.error = f'Inactive profile|{self.name}'
         if not self.host:
             self.error = f'Missing host|{self.name}'
         if not self.usr:
             self.error = f'Missing username|{self.name}'
-        if not self.pwd and not self.keyfile:
+        if not self.pwd and not self.private_key:
             self.error = f'Missing login method|{self.name}'
-        if self.login_type.upper() == 'KEY':
-            if not os.path.isfile(os.path.join(self.key_path, self.keyfile)) or not self.keyfile:
-                self.error = f'Missing key file|{self.name}'
+        if self.login_type.upper() == 'KEY' and not self.private_key:
+            self.error = f'Missing key file|{self.name}'
 
         return self.error
 
@@ -104,7 +102,8 @@ class sftp:
                     port=self.port,
                     username=self.usr,
                     password=self.pwd,
-                    key_filename=os.path.join(self.key_path, self.keyfile),  # TODO: Consider some kind of error handling if not an OPENSSH key file
+                    # TODO: Consider some kind of error handling if not an OPENSSH key file
+                    key_filename=os.path.join(self.key_path, self.keyfile),  # FIXME: Physical file DNE
                     passphrase=self.passphrase
                 )
         except paramiko.AuthenticationException:

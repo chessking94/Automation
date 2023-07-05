@@ -23,8 +23,8 @@ from .misc import get_config as get_config
 
 class monitoring_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config(MODULE_NAME, 'logDelimiter')
-    REFDELIM = get_config(MODULE_NAME, 'referenceDelimiter')
+    DELIM = get_config('logDelimiter')
+    REFDELIM = get_config('fileproc_referenceDelimiter')
 
 
 class monitoring:
@@ -34,8 +34,8 @@ class monitoring:
         self.last_review_time = self._processtime(readwrite='r')
         self.manual_review = False
 
-        self.log_path = get_config(monitoring_constants.MODULE_NAME, 'logPath')
-        self.log_name = f"{get_config(monitoring_constants.MODULE_NAME, 'logName')}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_path = os.path.join(get_config('logRoot'), monitoring_constants.MODULE_NAME)
+        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
 
         if self._validate() is not None:
             logging.critical(self.error)
@@ -67,7 +67,7 @@ class monitoring:
 
         key_column = 'Path'
         dt_column = 'LastMonitorTime'
-        reference_file = get_config(monitoring_constants.MODULE_NAME, 'referenceFile')
+        reference_file = get_config('fileproc_referenceFile')
         if not os.path.isfile(reference_file):
             header_row = f'{key_column}{monitoring_constants.REFDELIM}{dt_column}{NL}'
             with open(file=reference_file, mode='w', encoding='utf-8') as f:

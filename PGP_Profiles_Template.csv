@@ -1,3 +1,0 @@
-Name,Active,Type,Extension,EncryptPath,DecryptPath,SuppressEncrypt,SuppressDecrypt
-TestPublic,1,Public,pgp,C:\FileProcessing\Export,C:\FileProcessing\Import,test*|*.sql,*out
-TestPrivate,1,Private,pgp,C:\FileProcessing\Export,C:\FileProcessing\Import,,

@@ -14,18 +14,25 @@ import os
 from .constants import VALID_DELIMS as VALID_DELIMS
 
 
-def get_config(module: str, key: str, path_override: str = None) -> str:
+def get_config(key: str, path_override: str = None, name_override: str = 'config.json') -> str:
     # TODO: May need to add an optional test parameter to override prod location and file name
-    # TODO: Would it make more sense to have the config path be a parameter somewhere? Global variable? Config parameter?
+    # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
     if path_override is None:
         config_path = os.path.dirname(__file__)
         for _ in range(1):  # predefined to be one directory above the location of this file
             config_path = os.path.dirname(config_path)
     else:
         config_path = path_override
-    # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
-    with open(os.path.join(config_path, f'{module}_config.json'), 'r') as t:
-        key_data = json.load(t)
+    if name_override is None:
+        config_name = 'config.json'
+    else:
+        config_name = name_override
+
+    if not os.path.isfile(os.path.join(config_path, config_name)):
+        raise FileNotFoundError('missing config file')
+
+    with open(os.path.join(config_path, config_name), 'r') as cf:
+        key_data = json.load(cf)
     val = key_data.get(key)
     return val
 

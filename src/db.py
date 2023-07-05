@@ -21,17 +21,13 @@ from .misc import get_config as get_config
 # TODO: Add general query execution stuff, will need injection defenses
 
 
-class db_constants:
-    MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-
-
 class db:
     # only have tested this with SQL Server
     def __init__(self):
-        self.conn = sql.connect(get_config(db_constants.MODULE_NAME, 'connectionString'))
+        self.conn = sql.connect(get_config('db_connectionString'))
 
     def __enter__(self):
-        self.conn = sql.connect(get_config(db_constants.MODULE_NAME, 'connectionString'))
+        self.conn = sql.connect(get_config('db_connectionString'))
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):

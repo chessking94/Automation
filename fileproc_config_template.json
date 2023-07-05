@@ -1,7 +1,0 @@
-{
-	"referenceFile": "C:/reference/directorymonitoring.csv",
-	"referenceDelimiter": ",",
-	"logDelimiter": ",",
-	"logPath": "C:/logs/automation",
-	"logName": "directorymonitoring"
-}
