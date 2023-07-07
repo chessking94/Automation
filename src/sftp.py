@@ -2,7 +2,7 @@
 
 Author: Ethan Hunt
 Date: 2023-06-13
-Version: 1.0
+Version: 2.0
 
 """
 

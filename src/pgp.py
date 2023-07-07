@@ -2,7 +2,7 @@
 
 Author: Ethan Hunt
 Date: 2023-06-14
-Version: 1.0
+Version: 2.0
 
 """
 
@@ -43,6 +43,8 @@ class pgp:
         self.suppress_decrypt = kp.getcustomproperties('SuppressDecryptDefault').strip(f"'{suppress_delimiter} '")
         self.suppress_decrypt = self.suppress_decrypt.split(suppress_delimiter)
 
+        self.public_key = kp.readattachment('PUBLIC.asc')
+        self.private_key = kp.readattachment('PRIVATE.asc')
         self.passphrase = kp.getgeneral('Password')
 
         self.error = None
@@ -59,10 +61,11 @@ class pgp:
         return self.error
 
     def encrypt(self, archive: bool = True):
+        # TODO: Add custom path and file parameters like in SFTP
         archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
-            pub_key, _ = pgpy.PGPKey.from_file(self.public_file)  # TODO: Switch to block text instead of file
+            pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
             directory_list = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
             suppress_list = []
             for f in directory_list:
@@ -92,10 +95,11 @@ class pgp:
                             os.rename(os.path.join(self.encrypt_path, f), archive_name)
 
     def decrypt(self, archive: bool = True):
+        # TODO: Add custom path and file parameters like in SFTP
         archive = archive if archive in BOOLEANS else False
 
         if self.error is None:
-            prv_key, _ = pgpy.PGPKey.from_file(self.private_file)  # TODO: Switch to block text instead of file
+            prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
             directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
             suppress_list = []
             for f in directory_list:
