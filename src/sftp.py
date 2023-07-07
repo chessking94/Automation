@@ -22,7 +22,7 @@ from .secrets import keepass
 
 class sftp_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config(MODULE_NAME, 'logDelimiter')
+    DELIM = get_config('logDelimiter')
 
 
 class sftp:
