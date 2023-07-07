@@ -9,14 +9,14 @@ FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
 
 class TestMisc(unittest.TestCase):
     def test_get_config_no_file(self):
-        self.assertRaises(FileNotFoundError, misc.get_config, 'Test', 'Test')
+        self.assertRaises(FileNotFoundError, misc.get_config, 'Test', None, 'dne.json')
 
     def test_get_config_missing_key(self):
-        test_val = misc.get_config('test', 'DNE', FILE_DIR)
+        test_val = misc.get_config('DNE', FILE_DIR, 'test_config.json')
         self.assertIsNone(test_val)
 
     def test_get_config(self):
-        test_val = misc.get_config('test', 'Key', FILE_DIR)
+        test_val = misc.get_config('Key', FILE_DIR, 'test_config.json')
         self.assertEqual(test_val, 'Value')
 
     def test_csv_to_json(self):
