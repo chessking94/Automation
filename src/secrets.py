@@ -41,6 +41,8 @@ class keepass():
         if not isinstance(entries[0], pk.Entry):
             raise TypeError(f"expecting 'pykeepass.Entry', got '{type(entries)}'")
 
+        return entries[0]
+
     def getgeneral(self, field: str) -> str:
         field = field.lower()
         field_list = ['title', 'username', 'password', 'url']  # TODO: Look into a more flexible way to do this validation
