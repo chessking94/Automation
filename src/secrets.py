@@ -54,7 +54,9 @@ class keepass():
     def getcustomproperties(self, string_field: str) -> str:
         # TODO: Look into a more elegant way to do this validation
         property_list = []
-        if self.group_title == 'pgp':
+        if self.group_title == 'test':
+            property_list = ['Test']
+        elif self.group_title == 'pgp':
             property_list = [
                 'DecryptPathDefault',
                 'EncryptedExtension',
