@@ -32,9 +32,9 @@ class pgp:
             entry_title=profile_name
         )
         self.name = profile_name
-        self.extension = kp.getcustomproperties('EncryptedExtension').strip().lower()
-        self.encrypt_path = kp.getcustomproperties('EncryptPathDefault').strip()
-        self.decrypt_path = kp.getcustomproperties('DecryptPathDefault').strip()
+        self.extension = kp.getcustomproperties('EncryptedExtension').lower()
+        self.encrypt_path = kp.getcustomproperties('EncryptPathDefault')
+        self.decrypt_path = kp.getcustomproperties('DecryptPathDefault')
 
         suppress_delimiter = get_config('suppressDelimiter')
         self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault')
