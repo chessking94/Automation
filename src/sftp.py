@@ -171,29 +171,28 @@ class sftp:
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
 
+        if not os.path.isdir(local_dir):
+            raise FileNotFoundError
+
         # validate local_files and make sure its the proper data type
         local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
         local_files = local_files if isinstance(local_files, list) else []  # convert to empty list if not already a list type
 
-        if not os.path.isdir(local_dir):
-            raise FileNotFoundError
-
         if self.error is None:
+            directory_list = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
             if len(local_files) == 0:
                 # no specific files passed, use standard config parameters
-                local_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
                 suppress_list = []
-                for f in local_files:
+                for f in directory_list:
                     for suppress_item in self.suppress_out:
                         if fnmatch.fnmatch(f, suppress_item):
                             suppress_list.append(f)
 
-                upload_files = [x for x in local_files if x not in suppress_list]
+                upload_files = [x for x in directory_list if x not in suppress_list]
             else:
                 # specific files/wildcards provided, bypass config parameters
-                dir_files = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
                 upload_list = []
-                for f in dir_files:
+                for f in directory_list:
                     for include_file in local_files:
                         if fnmatch.fnmatch(f, include_file):
                             upload_list.append(f)

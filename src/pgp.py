@@ -60,56 +60,92 @@ class pgp:
 
         return self.error
 
-    def encrypt(self, archive: bool = True):
-        # TODO: Add custom path and file parameters like in SFTP
+    def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True):
+        path_override = self.encrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
 
-        if self.error is None:
-            pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
-            directory_list = [f for f in os.listdir(self.encrypt_path) if os.path.isfile(os.path.join(self.encrypt_path, f))]
-            suppress_list = []
-            for f in directory_list:
-                for suppress_item in self.suppress_encrypt:
-                    if fnmatch.fnmatch(f, suppress_item):
-                        suppress_list.append(f)
+        if not os.path.isdir(path_override):
+            raise FileNotFoundError
 
-            encrypt_files = [x for x in directory_list if x not in suppress_list]
+        # validate local_files and make sure its the proper data type
+        file_override = [file_override] if isinstance(file_override, str) else file_override  # convert single files to a list
+        file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
+
+        if self.error is None:
+            directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
+            if len(file_override) == 0:
+                # no specific files passed, use standard config parameters
+                suppress_list = []
+                for f in directory_list:
+                    for suppress_item in self.suppress_encrypt:
+                        if fnmatch.fnmatch(f, suppress_item):
+                            suppress_list.append(f)
+
+                encrypt_files = [x for x in directory_list if x not in suppress_list]
+            else:
+                # specific files/wildcards provided, bypass config parameters
+                encrypt_list = []
+                for f in directory_list:
+                    for include_file in file_override:
+                        if fnmatch.fnmatch(f, include_file):
+                            encrypt_list.append(f)
+                encrypt_files = [x for x in encrypt_list if os.path.isfile(os.path.join(path_override, x))]
+
+            pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
             for f in encrypt_files:
                 is_encrypted = False
                 try:
-                    pgpy.PGPMessage.from_file(os.path.join(self.encrypt_path, f))
+                    pgpy.PGPMessage.from_file(os.path.join(path_override, f))
                     is_encrypted = True
                 except ValueError:
                     logging.debug(f'File is already encrypted|{f}')
                 if not is_encrypted:
-                    data = pgpy.PGPMessage.new(os.path.join(self.encrypt_path, f), file=True)
+                    data = pgpy.PGPMessage.new(os.path.join(path_override, f), file=True)
                     encrypted_data = bytes(pub_key.encrypt(data))
-                    encrypted_file = os.path.join(self.encrypt_path, f'{f}.{self.extension}')
+                    encrypted_file = os.path.join(path_override, f'{f}.{self.extension}')
                     with open(encrypted_file, 'wb') as ef:
                         ef.write(encrypted_data)
 
                     if archive:
-                        archive_dir = os.path.join(self.encrypt_path, 'Archive')
+                        archive_dir = os.path.join(path_override, 'Archive')
                         if os.path.isdir(archive_dir):
                             archive_name = os.path.join(archive_dir, f)
-                            os.rename(os.path.join(self.encrypt_path, f), archive_name)
+                            os.rename(os.path.join(path_override, f), archive_name)
 
-    def decrypt(self, archive: bool = True):
-        # TODO: Add custom path and file parameters like in SFTP
+    def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True):
+        path_override = self.decrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
 
-        if self.error is None:
-            prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
-            directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
-            suppress_list = []
-            for f in directory_list:
-                for suppress_item in self.suppress_decrypt:
-                    if fnmatch.fnmatch(f, suppress_item):
-                        suppress_list.append(f)
+        if not os.path.isdir(path_override):
+            raise FileNotFoundError
 
-            decrypt_files = [x for x in directory_list if x not in suppress_list]
-            for f in decrypt_files:
-                with prv_key.unlock(self.passphrase):
+        # validate local_files and make sure its the proper data type
+        file_override = [file_override] if isinstance(file_override, str) else file_override  # convert single files to a list
+        file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
+
+        if self.error is None:
+            directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
+            if len(file_override) == 0:
+                # no specific files passed, use standard config parameters
+                suppress_list = []
+                for f in directory_list:
+                    for suppress_item in self.suppress_decrypt:
+                        if fnmatch.fnmatch(f, suppress_item):
+                            suppress_list.append(f)
+
+                decrypt_files = [x for x in directory_list if x not in suppress_list]
+            else:
+                # specific files/wildcards provided, bypass config parameters
+                decrypt_list = []
+                for f in directory_list:
+                    for include_file in file_override:
+                        if fnmatch.fnmatch(f, include_file):
+                            decrypt_list.append(f)
+                decrypt_files = [x for x in decrypt_list if os.path.isfile(os.path.join(path_override, x))]
+
+            prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
+            with prv_key.unlock(self.passphrase):
+                for f in decrypt_files:
                     done = False
                     try:
                         encrypted_data = pgpy.PGPMessage.from_file(os.path.join(self.decrypt_path, f))
