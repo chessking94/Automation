@@ -60,7 +60,7 @@ class pgp:
 
         return self.error
 
-    def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True):
+    def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True) -> list:
         path_override = self.encrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
 
@@ -71,6 +71,7 @@ class pgp:
         file_override = [file_override] if isinstance(file_override, str) else file_override  # convert single files to a list
         file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
 
+        success_list = []
         if self.error is None:
             directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
             if len(file_override) == 0:
@@ -106,13 +107,17 @@ class pgp:
                     with open(encrypted_file, 'wb') as ef:
                         ef.write(encrypted_data)
 
+                    success_list.append(encrypted_file)
+
                     if archive:
                         archive_dir = os.path.join(path_override, 'Archive')
                         if os.path.isdir(archive_dir):
                             archive_name = os.path.join(archive_dir, f)
                             os.rename(os.path.join(path_override, f), archive_name)
 
-    def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True):
+        return success_list
+
+    def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True) -> list:
         path_override = self.decrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
 
@@ -123,6 +128,7 @@ class pgp:
         file_override = [file_override] if isinstance(file_override, str) else file_override  # convert single files to a list
         file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
 
+        success_list = []
         if self.error is None:
             directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
             if len(file_override) == 0:
@@ -161,8 +167,12 @@ class pgp:
                         with open(decrypted_file, 'wb') as df:
                             df.write(decrypted_data)
 
+                        success_list.append(decrypted_file)
+
                         if archive:
                             archive_dir = os.path.join(self.decrypt_path, 'Archive')
                             if os.path.isdir(archive_dir):
                                 archive_name = os.path.join(archive_dir, f)
                                 os.rename(os.path.join(self.decrypt_path, f), archive_name)
+
+        return success_list
