@@ -4,7 +4,7 @@ import unittest
 
 import src.jsonstuff as jsonstuff
 
-FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
+FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'jsonstuff')
 
 
 class TestJsonstuff(unittest.TestCase):
@@ -34,7 +34,7 @@ class TestJsonstuff(unittest.TestCase):
 
     def test_reformat_json_multiple_files(self):
         self.file_list = jsonstuff.reformat_json(FILE_DIR)
-        self.assertEqual(len(self.file_list), 3)
+        self.assertEqual(len(self.file_list), 2)
 
 
 if __name__ == '__main__':

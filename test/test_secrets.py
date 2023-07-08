@@ -5,7 +5,7 @@ import unittest
 from src.misc import get_config
 import src.secrets as secrets
 
-FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
+FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'secrets')
 
 
 class TestKeepass(unittest.TestCase):

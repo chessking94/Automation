@@ -3,7 +3,7 @@ import unittest
 
 import src.office as office
 
-FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
+FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'office')
 
 
 class TestConvert(unittest.TestCase):
@@ -17,7 +17,7 @@ class TestConvert(unittest.TestCase):
             os.remove(self.result_file)
 
     def test_guess_delimiter(self):
-        file = 'csvjsonconvert.csv'
+        file = 'extractcolumns1.abc'
         filename = os.path.join(FILE_DIR, file)
         self.assertNotEqual(self.cvrt._guessdelimiter(filename), '|')
 

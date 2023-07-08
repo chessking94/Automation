@@ -4,7 +4,7 @@ import unittest
 
 from src.cmd import cmd
 
-FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
+FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'cmd')
 
 
 class TestCmd(unittest.TestCase):

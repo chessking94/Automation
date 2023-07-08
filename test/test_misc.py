@@ -4,7 +4,7 @@ import unittest
 
 import src.misc as misc
 
-FILE_DIR = os.path.join(os.path.dirname(__file__), 'files')
+FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'misc')
 
 
 class TestMisc(unittest.TestCase):
