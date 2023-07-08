@@ -37,10 +37,12 @@ class pgp:
         self.decrypt_path = kp.getcustomproperties('DecryptPathDefault').strip()
 
         suppress_delimiter = get_config('suppressDelimiter')
-        self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault').strip(f"'{suppress_delimiter} '")
+        self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault')
+        self.suppress_encrypt = '' if self.suppress_encrypt is None else self.suppress_encrypt.strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
         self.suppress_encrypt.append(f'*.{self.extension}')
-        self.suppress_decrypt = kp.getcustomproperties('SuppressDecryptDefault').strip(f"'{suppress_delimiter} '")
+        self.suppress_decrypt = kp.getcustomproperties('SuppressDecryptDefault')
+        self.suppress_decrypt = '' if self.suppress_decrypt is None else self.suppress_decrypt.strip(f"'{suppress_delimiter} '")
         self.suppress_decrypt = self.suppress_decrypt.split(suppress_delimiter)
 
         self.public_key = kp.readattachment('PUBLIC.asc')
@@ -55,6 +57,7 @@ class pgp:
             logging.critical(self.error)
 
     def _validate_profile(self) -> str:
+        # TODO: Rework this so it mirrors sftp more
         if self.error is not None:
             logging.critical(self.error)
 
@@ -94,12 +97,16 @@ class pgp:
 
             pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
             for f in encrypt_files:
-                is_encrypted = False
                 try:
                     pgpy.PGPMessage.from_file(os.path.join(path_override, f))
                     is_encrypted = True
+                    logging.warning(f'File is already encrypted|{f}')
                 except ValueError:
-                    logging.debug(f'File is already encrypted|{f}')
+                    is_encrypted = False
+                except NotImplementedError:
+                    logging.critical(f'unable to read file {f}')
+                    is_encrypted = True
+
                 if not is_encrypted:
                     data = pgpy.PGPMessage.new(os.path.join(path_override, f), file=True)
                     encrypted_data = bytes(pub_key.encrypt(data))
@@ -130,7 +137,7 @@ class pgp:
 
         success_list = []
         if self.error is None:
-            directory_list = [f for f in os.listdir(self.decrypt_path) if os.path.isfile(os.path.join(self.decrypt_path, f))]
+            directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
             if len(file_override) == 0:
                 # no specific files passed, use standard config parameters
                 suppress_list = []
@@ -154,25 +161,26 @@ class pgp:
                 for f in decrypt_files:
                     done = False
                     try:
-                        encrypted_data = pgpy.PGPMessage.from_file(os.path.join(self.decrypt_path, f))
-                    except ValueError:  # file is already decrypted
+                        encrypted_data = pgpy.PGPMessage.from_file(os.path.join(path_override, f))
+                    except ValueError:
+                        logging.warning(f'File is already decrypted|{f}')
                         done = True
 
                     if not done:
                         decrypted_data = prv_key.decrypt(encrypted_data).message
                         if not isinstance(decrypted_data, bytearray):
                             decrypted_data = bytearray(decrypted_data, encoding='utf-8')  # convert to bytes otherwise there's an extra <CR>
-                        decrypted_name = f.replace(f'.{self.extension}', '')
-                        decrypted_file = os.path.join(self.decrypt_path, decrypted_name)
+                        decrypted_name = f.replace(f'.{self.extension}', '')  # TODO: Add support for gpg or other extensions
+                        decrypted_file = os.path.join(path_override, decrypted_name)
                         with open(decrypted_file, 'wb') as df:
                             df.write(decrypted_data)
 
                         success_list.append(decrypted_file)
 
                         if archive:
-                            archive_dir = os.path.join(self.decrypt_path, 'Archive')
+                            archive_dir = os.path.join(path_override, 'Archive')
                             if os.path.isdir(archive_dir):
                                 archive_name = os.path.join(archive_dir, f)
-                                os.rename(os.path.join(self.decrypt_path, f), archive_name)
+                                os.rename(os.path.join(path_override, f), archive_name)
 
         return success_list
