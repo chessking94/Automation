@@ -39,3 +39,20 @@ class cmd:
         logging.debug(end_log)
 
         return rtnval
+
+    def run_command(self, command: str, command_path: str = None) -> int:
+        if not command:
+            raise RuntimeError('command not provided')
+
+        if command_path is None:
+            command_path = os.getcwd()
+
+        if not os.path.isdir(command_path):
+            raise FileNotFoundError(f'invalid path: {command_path}')
+
+        logging.debug(command)
+        if os.getcwd != command_path:
+            os.chdir(command_path)
+        rtnval = os.system('cmd /C ' + command)
+
+        return rtnval
