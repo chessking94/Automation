@@ -5,10 +5,4 @@ logs
 __pycache__
 notes.txt
 main.py
-sftp_config.json
-SFTP_Sites.csv
-pgp_config.json
-PGP_Profiles.csv
-db_config.json
-fileproc_config.json
 config.json
