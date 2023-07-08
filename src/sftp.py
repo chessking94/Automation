@@ -35,7 +35,7 @@ class sftp:
         )
         self.name = profile_name
         self.login_type = kp.getcustomproperties('LoginType').strip().upper()
-        self.login_type = self.login_type if self.login_type in ['NORMAL', 'KEY'] else 'NORMAL'
+        self.login_type = 'KEY' if 'KEY' in self.login_type else 'NORMAL'  # consider it a key file if string contains 'key'
         self.host = kp.getgeneral('url').strip()
         self.port = kp.getcustomproperties('Port')
         try:
