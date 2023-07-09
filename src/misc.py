@@ -15,14 +15,13 @@ from .constants import VALID_DELIMS as VALID_DELIMS
 
 
 def get_config(key: str, path_override: str = None, name_override: str = 'config.json') -> str:
-    # TODO: May need to add an optional test parameter to override prod location and file name
-    # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
     if path_override is None:
         config_path = os.path.dirname(__file__)
         for _ in range(1):  # predefined to be one directory above the location of this file
             config_path = os.path.dirname(config_path)
     else:
         config_path = path_override
+
     if name_override is None:
         config_name = 'config.json'
     else:
@@ -31,6 +30,7 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     if not os.path.isfile(os.path.join(config_path, config_name)):
         raise FileNotFoundError('missing config file')
 
+    # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
     with open(os.path.join(config_path, config_name), 'r') as cf:
         key_data = json.load(cf)
     val = key_data.get(key)
