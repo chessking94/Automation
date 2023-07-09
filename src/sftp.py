@@ -120,6 +120,8 @@ class sftp:
             logging.critical(f'Unhandled exception {e}|{self.host}')
 
     def _writelog(self, direction: str, remote_dir: str, local_dir: str, filename: str):
+        if not os.path.isdir(self.log_path):
+            os.mkdir(self.log_path)
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
             logfile.write(f'{self.name}{sftp_constants.DELIM}{dte}{sftp_constants.DELIM}{tme}{sftp_constants.DELIM}{direction}{sftp_constants.DELIM}')
@@ -134,56 +136,74 @@ class sftp:
         file_list = [x.filename for x in dir_list if not stat.S_ISDIR(x.st_mode)]
         return file_list
 
-    def download(self, remote_dir: str = None, local_dir: str = None, delete_ftp: bool = True, write_log: bool = False):
-        # TODO: download specific file masks
+    def download(self, remote_dir: str = None, local_dir: str = None, remote_files: list | str = None, delete_ftp: bool = True, write_log: bool = False) -> list:
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
         delete_ftp = delete_ftp if delete_ftp in BOOLEANS else False
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError
+            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
 
+        # validate local_files and make sure its the proper data type
+        remote_files = [remote_files] if isinstance(remote_files, str) else remote_files  # convert single files to a list
+        remote_files = remote_files if isinstance(remote_files, list) else []  # convert to empty list if not already a list type
+
+        success_list = []
         if self.error is None:
             self._connectssh()
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)
                 dir_list = ftp.listdir_attr(remote_dir)
-                tot_ct = len(dir_list)
-                for ctr, f in enumerate(dir_list):
+                # TODO: Review this logic again, seems really ugly and there should be a cleaner approach instead of multiple list iterations
+                download_files = []
+                if len(remote_files) == 0:
+                    for f in dir_list:
+                        if not stat.S_ISDIR(f.st_mode):
+                            for suppress_item in self.suppress_in:
+                                if not fnmatch.fnmatch(f.filename, suppress_item):
+                                    download_files.append(f.filename)
+                    tot_ct = len(dir_list)
+                else:
+                    for f in dir_list:
+                        if not stat.S_ISDIR(f.st_mode):
+                            for rf in remote_files:
+                                if fnmatch.fnmatch(f.filename, rf):
+                                    download_files.append(f.filename)
+                    tot_ct = len(download_files)
+
+                for ctr, f in enumerate(download_files):
+                    remote_file = os.path.join(remote_dir, f).replace('\\', '/')
+                    local_file = os.path.join(local_dir, f)
+                    local_file_archive = os.path.join(local_dir, 'Archive', f)
+                    if not os.path.isfile(local_file):
+                        if not os.path.isfile(local_file_archive):
+                            ftp.get(remote_file, local_file)
+                            success_list.append(f)
+                            if write_log:
+                                self._writelog('GET', remote_dir, local_dir, f)
+                            if delete_ftp:
+                                ftp.remove(remote_file)
+
                     if self.track_progress:
                         if (ctr + 1) % 100 == 0:
                             logging.info(f'{ctr + 1} files processed out of {tot_ct}')
-                    if not stat.S_ISDIR(f.st_mode):
-                        suppress_file = False
-                        for suppress_item in self.suppress_in:
-                            if fnmatch.fnmatch(f.filename, suppress_item):
-                                suppress_file = True
 
-                        if not suppress_file:
-                            remote_file = os.path.join(remote_dir, f.filename).replace('\\', '/')
-                            local_file = os.path.join(local_dir, f.filename)
-                            local_file_archive = os.path.join(local_dir, 'Archive', f.filename)
-                            if not os.path.isfile(local_file):
-                                if not os.path.isfile(local_file_archive):
-                                    ftp.get(remote_file, local_file)
-                                    if write_log:
-                                        self._writelog('GET', remote_dir, local_dir, f.filename)
-                                    if delete_ftp:
-                                        ftp.remove(remote_file)
+        return success_list
 
-    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, write_log: bool = False):
+    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, write_log: bool = False) -> list:
         remote_dir = self.remote_out if remote_dir is None else remote_dir
         local_dir = self.local_out if local_dir is None else local_dir
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError
+            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
 
         # validate local_files and make sure its the proper data type
         local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
         local_files = local_files if isinstance(local_files, list) else []  # convert to empty list if not already a list type
 
+        success_list = []
         if self.error is None:
             directory_list = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
             if len(local_files) == 0:
@@ -213,8 +233,11 @@ class sftp:
                         lf = os.path.join(local_dir, f)
                         uf = remote_dir + '/' + f if remote_dir[-1] != '/' else remote_dir + f  # ok to hard-code / here, it's sftp
                         ftp.put(lf, uf)
+                        success_list.append(f)
                         if write_log:
                             self._writelog('PUT', remote_dir, local_dir, f)
                         if os.path.isdir(local_dir_archive):
                             archive_name = os.path.join(local_dir_archive, f)
                             os.rename(lf, archive_name)
+
+        return success_list
