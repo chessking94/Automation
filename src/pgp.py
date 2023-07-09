@@ -57,9 +57,11 @@ class pgp:
             logging.critical(self.error)
 
     def _validate_profile(self) -> str:
-        # TODO: Rework this so it mirrors sftp more
-        if self.error is not None:
-            logging.critical(self.error)
+        if not self.public_key and not self.private_key:
+            self.error = f'No public or private keys|{self.name}'
+
+        if self.private_key and not self.passphrase:
+            self.error = f'Private key with no passphrase|{self.name}'
 
         return self.error
 
@@ -170,8 +172,18 @@ class pgp:
                         decrypted_data = prv_key.decrypt(encrypted_data).message
                         if not isinstance(decrypted_data, bytearray):
                             decrypted_data = bytearray(decrypted_data, encoding='utf-8')  # convert to bytes otherwise there's an extra <CR>
-                        decrypted_name = f.replace(f'.{self.extension}', '')  # TODO: Add support for gpg or other extensions
+
+                        # strip off pgp, gpg, and self.extension
+                        decrypted_name = f
+                        if decrypted_name.endswith(('.pgp', '.gpg')):
+                            decrypted_name = decrypted_name[:-4]
+                        if decrypted_name.endswith(f'.{self.extension}'):
+                            ext_len = len(self.extension)
+                            decrypted_name = decrypted_name[:-ext_len]
+
                         decrypted_file = os.path.join(path_override, decrypted_name)
+                        if os.path.isfile(decrypted_file):
+                            decrypted_file = f'{decrypted_file}.out'
                         with open(decrypted_file, 'wb') as df:
                             df.write(decrypted_data)
 
