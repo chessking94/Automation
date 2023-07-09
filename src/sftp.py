@@ -49,8 +49,7 @@ class sftp:
         self.private_key = kp.readattachment('OPENSSH_PRIVATE.asc')
         if self.private_key:
             self.private_key = io.StringIO(self.private_key)
-            # TODO: Consider some kind of error handling if not an RSA key
-            self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)
+            self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)  # assumption is it's an RSA key, let it bug out if not
 
         root = '/'
         self.remote_in = kp.getcustomproperties('RemoteInDefault')
