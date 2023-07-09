@@ -8,6 +8,7 @@ Version: 2.0
 
 import datetime as dt
 import fnmatch
+import io
 import logging
 import os
 import stat
@@ -36,29 +37,35 @@ class sftp:
         self.name = profile_name
         self.login_type = kp.getcustomproperties('LoginType').strip().upper()
         self.login_type = 'KEY' if 'KEY' in self.login_type else 'NORMAL'  # consider it a key file if string contains 'key'
-        self.host = kp.getgeneral('url').strip()
+        self.host = kp.getgeneral('url')
         self.port = kp.getcustomproperties('Port')
         try:
             self.port = int(self.port)
         except ValueError:
             self.port = 22
-        self.usr = kp.getgeneral('Username').strip()
-        self.pwd = kp.getgeneral('Password').strip()
-        self.passphrase = kp.getcustomproperties('Passphrase').strip()
+        self.usr = kp.getgeneral('Username')
+        self.pwd = kp.getgeneral('Password')
+        self.passphrase = kp.getcustomproperties('Passphrase')
         self.private_key = kp.readattachment('OPENSSH_PRIVATE.asc')
+        if self.private_key:
+            self.private_key = io.StringIO(self.private_key)
+            # TODO: Consider some kind of error handling if not an RSA key
+            self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)
 
         root = '/'
-        self.remote_in = kp.getcustomproperties('RemoteInDefault').strip()
-        self.remote_in = root if self.remote_in == '' else self.remote_in
-        self.remote_out = kp.getcustomproperties('RemoteOutDefault').strip()
-        self.remote_out = root if self.remote_out == '' else self.remote_out
-        self.local_in = kp.getcustomproperties('LocalInDefault').strip()
-        self.local_out = kp.getcustomproperties('LocalOutDefault').strip()
+        self.remote_in = kp.getcustomproperties('RemoteInDefault')
+        self.remote_in = root if not self.remote_in else self.remote_in
+        self.remote_out = kp.getcustomproperties('RemoteOutDefault')
+        self.remote_out = root if not self.remote_out else self.remote_out
+        self.local_in = kp.getcustomproperties('LocalInDefault')
+        self.local_out = kp.getcustomproperties('LocalOutDefault')
 
         suppress_delimiter = get_config('suppressDelimiter')
-        self.suppress_in = kp.getcustomproperties('SuppressInDefault').strip(f"'{suppress_delimiter} '")
+        self.suppress_in = kp.getcustomproperties('SuppressInDefault')
+        self.suppress_in = '' if self.suppress_in is None else self.suppress_in.strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
-        self.suppress_out = kp.getcustomproperties('SuppressOutDefault').strip(f"'{suppress_delimiter} '")
+        self.suppress_out = kp.getcustomproperties('SuppressOutDefault')
+        self.suppress_out = '' if self.suppress_out is None else self.suppress_out.strip(f"'{suppress_delimiter} '")
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
         self.error = None
@@ -77,7 +84,7 @@ class sftp:
             self.error = f'Missing username|{self.name}'
         if not self.pwd and not self.private_key:
             self.error = f'Missing login method|{self.name}'
-        if self.login_type.upper() == 'KEY' and not self.private_key:
+        if self.login_type == 'KEY' and not self.private_key:
             self.error = f'Missing key file|{self.name}'
 
         return self.error
@@ -102,8 +109,7 @@ class sftp:
                     port=self.port,
                     username=self.usr,
                     password=self.pwd,
-                    # TODO: Consider some kind of error handling if not an OPENSSH key file
-                    key_filename=os.path.join(self.key_path, self.keyfile),  # FIXME: Physical file DNE
+                    pkey=self.private_key,
                     passphrase=self.passphrase
                 )
         except paramiko.AuthenticationException:
