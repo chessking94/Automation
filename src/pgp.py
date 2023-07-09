@@ -104,7 +104,7 @@ class pgp:
                 except ValueError:
                     is_encrypted = False
                 except NotImplementedError:
-                    logging.critical(f'unable to read file {f}')
+                    logging.critical(f'unable to read file {f}')  # TODO: Excel/Word/Office files fail, how can I fix?
                     is_encrypted = True
 
                 if not is_encrypted:
