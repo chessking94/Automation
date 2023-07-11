@@ -20,13 +20,15 @@ from .secrets import keepass
 
 class pgp_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config('logDelimiter')
 
 
 class pgp:
-    def __init__(self, profile_name: str):
+    def __init__(self, profile_name: str, config_path: str = None):
+        if config_path and not os.path.isdir(config_path):
+            raise FileNotFoundError
+
         kp = keepass(
-            filename=get_config('keepassFile'),
+            filename=get_config(config_path, 'keepassFile'),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=pgp_constants.MODULE_NAME,
             entry_title=profile_name
@@ -36,7 +38,7 @@ class pgp:
         self.encrypt_path = kp.getcustomproperties('EncryptPathDefault')
         self.decrypt_path = kp.getcustomproperties('DecryptPathDefault')
 
-        suppress_delimiter = get_config('suppressDelimiter')
+        suppress_delimiter = get_config(config_path, 'suppressDelimiter')
         self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault')
         self.suppress_encrypt = '' if self.suppress_encrypt is None else self.suppress_encrypt.strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
@@ -50,8 +52,9 @@ class pgp:
         self.passphrase = kp.getgeneral('Password')
 
         self.error = None
-        self.log_path = os.path.join(get_config('logRoot'), pgp_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config(config_path, 'logRoot'), pgp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_delim = get_config(config_path, 'logDelimiter')
 
         if self._validate_profile() is not None:
             logging.critical(self.error)

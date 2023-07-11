@@ -23,19 +23,24 @@ from .misc import get_config as get_config
 
 class monitoring_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config('logDelimiter')
-    REFDELIM = get_config('fileproc_referenceDelimiter')
 
 
 class monitoring:
-    def __init__(self, path):
+    def __init__(self, path: str, config_path: str = None):
+        if config_path and not os.path.isdir(config_path):
+            raise FileNotFoundError
+
         self.path = path
         self.error = None
         self.last_review_time = self._processtime(readwrite='r')
         self.manual_review = False
 
-        self.log_path = os.path.join(get_config('logRoot'), monitoring_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config(config_path, 'logRoot'), monitoring_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.config_path = config_path
+
+        self.log_delim = get_config(config_path, 'logDelimiter')
+        self.ref_delim = get_config(config_path, 'fileproc_referenceDelimiter')
 
         if self._validate() is not None:
             logging.critical(self.error)
@@ -44,7 +49,7 @@ class monitoring:
         if not os.path.isdir(self.path):
             self.error = f'Path does not exist|{self.path}'
 
-        if monitoring_constants.REFDELIM in self.path:
+        if self.ref_delim in self.path:
             self.error = f'Path contains referenceDelimiter|{self.path}'
 
         return self.error
@@ -67,9 +72,9 @@ class monitoring:
 
         key_column = 'Path'
         dt_column = 'LastMonitorTime'
-        reference_file = get_config('fileproc_referenceFile')
+        reference_file = get_config(self.config_path, 'fileproc_referenceFile')
         if not os.path.isfile(reference_file):
-            header_row = f'{key_column}{monitoring_constants.REFDELIM}{dt_column}{NL}'
+            header_row = f'{key_column}{self.ref_delim}{dt_column}{NL}'
             with open(file=reference_file, mode='w', encoding='utf-8') as f:
                 f.write(header_row)
 
@@ -112,8 +117,8 @@ class monitoring:
     def _writelog(self, filename: str):
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
-            logfile.write(f'{self.path}{monitoring_constants.DELIM}{dte}{monitoring_constants.DELIM}')
-            logfile.write(f'{tme}{monitoring_constants.DELIM}{filename}{NL}')
+            logfile.write(f'{self.path}{self.log_delim}{dte}{self.log_delim}')
+            logfile.write(f'{tme}{self.log_delim}{filename}{NL}')
 
     def change_time(self, dt_string: str):
         self.last_review_time = self._processtime(readwrite='r', dt_string=dt_string)

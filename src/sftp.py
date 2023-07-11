@@ -23,13 +23,15 @@ from .secrets import keepass
 
 class sftp_constants:
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
-    DELIM = get_config('logDelimiter')
 
 
 class sftp:
-    def __init__(self, profile_name: str, track_progress: bool = True):
+    def __init__(self, profile_name: str, track_progress: bool = True, config_path: str = None):
+        if config_path and not os.path.isdir(config_path):
+            raise FileNotFoundError
+
         kp = keepass(
-            filename=get_config('keepassFile'),
+            filename=get_config(config_path, 'keepassFile'),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=sftp_constants.MODULE_NAME,
             entry_title=profile_name
@@ -59,7 +61,7 @@ class sftp:
         self.local_in = kp.getcustomproperties('LocalInDefault')
         self.local_out = kp.getcustomproperties('LocalOutDefault')
 
-        suppress_delimiter = get_config('suppressDelimiter')
+        suppress_delimiter = get_config(config_path, 'suppressDelimiter')
         self.suppress_in = kp.getcustomproperties('SuppressInDefault')
         self.suppress_in = '' if self.suppress_in is None else self.suppress_in.strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
@@ -69,8 +71,9 @@ class sftp:
 
         self.error = None
         self.ssh = None
-        self.log_path = os.path.join(get_config('logRoot'), sftp_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config(config_path, 'logRoot'), sftp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_delim = get_config(config_path, 'logDelimiter')
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
         if self._validate_profile() is not None:
@@ -123,8 +126,8 @@ class sftp:
             os.mkdir(self.log_path)
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
-            logfile.write(f'{self.name}{sftp_constants.DELIM}{dte}{sftp_constants.DELIM}{tme}{sftp_constants.DELIM}{direction}{sftp_constants.DELIM}')
-            logfile.write(f'{remote_dir}{sftp_constants.DELIM}{local_dir}{sftp_constants.DELIM}{filename}{NL}')
+            logfile.write(f'{self.name}{self.log_delim}{dte}{self.log_delim}{tme}{self.log_delim}{direction}{self.log_delim}')
+            logfile.write(f'{remote_dir}{self.log_delim}{local_dir}{self.log_delim}{filename}{NL}')
 
     def _listsftpdir(self, remote_dir: str) -> list:
         self._connectssh()
