@@ -23,11 +23,17 @@ from .misc import get_config as get_config
 
 class db:
     # only have tested this with SQL Server
-    def __init__(self):
-        self.conn = sql.connect(get_config('db_connectionString'))
+    def __init__(self, config_path: str = None):
+        if config_path and not os.path.isdir(config_path):
+            raise FileNotFoundError
 
-    def __enter__(self):
-        self.conn = sql.connect(get_config('db_connectionString'))
+        self.conn = sql.connect(get_config(config_path, 'db_connectionString'))
+
+    def __enter__(self, config_path: str = None):
+        if config_path and not os.path.isdir(config_path):
+            raise FileNotFoundError
+
+        self.conn = sql.connect(get_config(config_path, 'db_connectionString'))
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
