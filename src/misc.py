@@ -27,11 +27,12 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     else:
         config_name = name_override
 
-    if not os.path.isfile(os.path.join(config_path, config_name)):
-        raise FileNotFoundError('missing config file')
+    config_file = os.path.join(config_path, config_name)
+    if not os.path.isfile(config_file):
+        raise FileNotFoundError(f'missing config file|{config_file}')
 
     # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
-    with open(os.path.join(config_path, config_name), 'r') as cf:
+    with open(config_file, 'r') as cf:
         key_data = json.load(cf)
     val = key_data.get(key)
     return val

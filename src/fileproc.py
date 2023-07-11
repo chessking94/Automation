@@ -35,12 +35,12 @@ class monitoring:
         self.last_review_time = self._processtime(readwrite='r')
         self.manual_review = False
 
-        self.log_path = os.path.join(get_config(config_path, 'logRoot'), monitoring_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config('logRoot', config_path), monitoring_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
         self.config_path = config_path
 
-        self.log_delim = get_config(config_path, 'logDelimiter')
-        self.ref_delim = get_config(config_path, 'fileproc_referenceDelimiter')
+        self.log_delim = get_config('logDelimiter', config_path)
+        self.ref_delim = get_config('fileproc_referenceDelimiter', config_path)
 
         if self._validate() is not None:
             logging.critical(self.error)
@@ -72,7 +72,7 @@ class monitoring:
 
         key_column = 'Path'
         dt_column = 'LastMonitorTime'
-        reference_file = get_config(self.config_path, 'fileproc_referenceFile')
+        reference_file = get_config('fileproc_referenceFile', self.config_path)
         if not os.path.isfile(reference_file):
             header_row = f'{key_column}{self.ref_delim}{dt_column}{NL}'
             with open(file=reference_file, mode='w', encoding='utf-8') as f:

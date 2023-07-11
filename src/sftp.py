@@ -31,7 +31,7 @@ class sftp:
             raise FileNotFoundError
 
         kp = keepass(
-            filename=get_config(config_path, 'keepassFile'),
+            filename=get_config('keepassFile', config_path),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=sftp_constants.MODULE_NAME,
             entry_title=profile_name
@@ -61,7 +61,7 @@ class sftp:
         self.local_in = kp.getcustomproperties('LocalInDefault')
         self.local_out = kp.getcustomproperties('LocalOutDefault')
 
-        suppress_delimiter = get_config(config_path, 'suppressDelimiter')
+        suppress_delimiter = get_config('suppressDelimiter', config_path)
         self.suppress_in = kp.getcustomproperties('SuppressInDefault')
         self.suppress_in = '' if self.suppress_in is None else self.suppress_in.strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
@@ -71,9 +71,9 @@ class sftp:
 
         self.error = None
         self.ssh = None
-        self.log_path = os.path.join(get_config(config_path, 'logRoot'), sftp_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config('logRoot', config_path), sftp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
-        self.log_delim = get_config(config_path, 'logDelimiter')
+        self.log_delim = get_config('logDelimiter', config_path)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
         if self._validate_profile() is not None:
