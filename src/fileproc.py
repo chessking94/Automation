@@ -31,13 +31,13 @@ class monitoring:
             raise FileNotFoundError
 
         self.path = path
+        self.config_path = config_path
         self.error = None
         self.last_review_time = self._processtime(readwrite='r')
         self.manual_review = False
 
         self.log_path = os.path.join(get_config('logRoot', config_path), monitoring_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
-        self.config_path = config_path
 
         self.log_delim = get_config('logDelimiter', config_path)
         self.ref_delim = get_config('fileproc_referenceDelimiter', config_path)
