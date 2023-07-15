@@ -13,6 +13,7 @@ import os
 
 import pgpy
 
+from .constants import NL as NL
 from .constants import BOOLEANS as BOOLEANS
 from .misc import get_config as get_config
 from .secrets import keepass
@@ -68,9 +69,18 @@ class pgp:
 
         return self.error
 
-    def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True) -> list:
+    def _writelog(self, typ: str, dir: str, file_in: str, file_out: str):
+        if not os.path.isdir(self.log_path):
+            os.mkdir(self.log_path)
+        with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
+            dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
+            logfile.write(f'{self.name}{self.log_delim}{dte}{self.log_delim}{tme}{self.log_delim}{typ}{self.log_delim}')
+            logfile.write(f'{dir}{self.log_delim}{file_in}{self.log_delim}{file_out}{NL}')
+
+    def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True, write_log: bool = False) -> list:
         path_override = self.encrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
+        write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(path_override):
             raise FileNotFoundError
@@ -120,6 +130,8 @@ class pgp:
                         ef.write(encrypted_data)
 
                     success_list.append(encrypted_file)
+                    if write_log:
+                        self._writelog('ENCRYPT', path_override, f, os.path.basename(encrypted_file))
 
                     if archive:
                         archive_dir = os.path.join(path_override, 'Archive')
@@ -129,9 +141,10 @@ class pgp:
 
         return success_list
 
-    def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True) -> list:
+    def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True, write_log: bool = False) -> list:
         path_override = self.decrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
+        write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(path_override):
             raise FileNotFoundError
@@ -191,6 +204,8 @@ class pgp:
                             df.write(decrypted_data)
 
                         success_list.append(decrypted_file)
+                        if write_log:
+                            self._writelog('DECRYPT', path_override, f, os.path.basename(decrypted_file))
 
                         if archive:
                             archive_dir = os.path.join(path_override, 'Archive')
