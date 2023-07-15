@@ -1,8 +1,7 @@
 """cmd
 
 Author: Ethan Hunt
-Date: 2023-06-17
-Version: 1.0
+Creation Date: 2023-06-17
 
 """
 
@@ -11,14 +10,45 @@ import os
 
 
 class cmd_constants:
+    """A class for constants necessary for the cmd class"""
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
 class cmd:
+    """Windows cmd prompt wrapper to execute commands. More focused than simply os.system() usage"""
     def __init__(self):
         pass
 
     def run_script(self, program_name: str, script_path: str, script_name: str, parameters: str = None) -> int:
+        """Execute scripts or programs
+
+        Parameters
+        ----------
+        program_name : str
+            Name of external program to use to run the script or executable
+        script_path : str
+            The directory in which the script or executable resides
+        script_name : str
+            The name of the script or executable to run
+        parameters : str, optional (default None)
+            Custom parameters for the program to use
+
+        Returns
+        ----------
+        int : the same return value as os.system()
+
+        Raises
+        ----------
+        FileNotFoundError
+            If the script_path location does not exist in the file system
+            If the script_name file does not exist at the script_path location in the file system
+
+        Examples
+        ----------
+        >>> print(run_script('python', 'C:/Windows', 'test.py'))
+        0
+
+        """
         if not os.path.isdir(script_path):
             raise FileNotFoundError
 
@@ -40,15 +70,39 @@ class cmd:
 
         return rtnval
 
-    def run_command(self, command: str, command_path: str = None) -> int:
+    def run_command(self, command: str, command_path: str = os.getcwd()) -> int:
+        """Execute a command via cmd prompt
+
+        Parameters
+        ----------
+        command : str
+            The actual command text to run
+        command_path : str, optional (default current working directory)
+            The directory in which the command is to be run
+
+        Returns
+        -------
+        int : the same return value as os.system()
+
+        Raises
+        ------
+        RuntimeError
+            If no command is provided
+        FileNotFoundError
+            If the command_path location does not exist in the file system
+
+        Examples
+        ----------
+        >>> cmd_text = 'echo test >> test.txt'
+        >>> print(run_command(cmd_text))
+        0
+
+        """
         if not command:
             raise RuntimeError('command not provided')
 
-        if command_path is None:
-            command_path = os.getcwd()
-
         if not os.path.isdir(command_path):
-            raise FileNotFoundError(f'invalid path: {command_path}')
+            raise FileNotFoundError(f"invalid path: '{command_path}'")
 
         logging.debug(command)
         if os.getcwd != command_path:
