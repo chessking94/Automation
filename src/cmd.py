@@ -10,7 +10,7 @@ import os
 
 
 class cmd_constants:
-    """A class for constants necessary for the cmd class"""
+    """A class for constants necessary for the cmd module"""
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
