@@ -43,6 +43,11 @@ class db:
         config_path : str, optional (default None)
             Directory in which the library configuration file resides.
 
+        Raises
+        ------
+        FileNotFoundError
+            If config_path does not exist
+
         Examples
         ----------
         >>> conn = db()
