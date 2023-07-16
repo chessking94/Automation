@@ -11,6 +11,7 @@ import json
 
 
 def reformat_json(path: str, file: str = None) -> list:
+    # TODO: Make file parameter a list so multiple files can be passed
     """Beautifies a JSON file
 
     Reformats a JSON/dictionary file from a single line into something more human-readable
