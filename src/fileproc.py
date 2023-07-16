@@ -182,6 +182,8 @@ class monitoring:
 
     def _writelog(self, filename: str):
         """Class function to write to a log file"""
+        if not os.path.isdir(self.log_path):
+            os.mkdir(self.log_path)
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
             logfile.write(f'{self.path}{self.log_delim}{dte}{self.log_delim}')
