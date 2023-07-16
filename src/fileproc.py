@@ -15,9 +15,6 @@ from .constants import BOOLEANS as BOOLEANS
 from .constants import NL as NL
 from .misc import get_config as get_config
 
-# TODO: Mass move files from one location to another? Perhaps too general and shutil is good enough
-# TODO: Handling/logging around receiving servicer files
-
 
 class fileproc_constants:
     """A class for constants necessary for the fileproc module"""
@@ -47,6 +44,11 @@ class monitoring:
         Delimiter to use in the log file, defined in the configuration file
     ref_delim : str
         Delimiter to use in the reference file logging the last datetime of monitoring review, defined in the configuration file
+
+    TODO
+    ----
+    Mass move files from one location to another? Perhaps too general and shutil is good enough
+    Handling/logging around receiving servicer files, possibly already accomplished with modified_files' write_log parameter
 
     """
     def __init__(self, path: str, config_path: str = None):

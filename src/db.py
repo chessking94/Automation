@@ -17,8 +17,6 @@ import pyodbc as sql
 from .constants import BOOLEANS as BOOLEANS
 from .misc import get_config as get_config
 
-# TODO: Add general query execution stuff, will need injection defenses
-
 
 class db:
     """Class to handle processes related to databases
@@ -33,6 +31,10 @@ class db:
     Notes
     -----
     Only has been tested with SQL Server
+
+    TODO
+    ----
+    Add general query execution stuff, will need injection defenses
 
     """
     def __init__(self, config_path: str = None):

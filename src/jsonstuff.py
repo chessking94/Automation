@@ -11,7 +11,6 @@ import json
 
 
 def reformat_json(path: str, file: str = None) -> list:
-    # TODO: Make file parameter a list so multiple files can be passed
     """Beautifies a JSON file
 
     Reformats a JSON/dictionary file from a single line into something more human-readable
@@ -38,6 +37,10 @@ def reformat_json(path: str, file: str = None) -> list:
     >>> file_list = reformat_json('/my/path')
     >>> print(file_list)
     ['file1_reformat.json', 'file2_reformat.json']
+
+    TODO
+    ----
+    Rework parameter 'file' into a list so multiple files can be passed
 
     """
     if not os.path.isdir(path):

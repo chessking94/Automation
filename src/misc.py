@@ -41,6 +41,10 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     >>> print(val)
     MyValue
 
+    TODO
+    ----
+    Generalize so it can accept JSON, YAML, and a two column csv file
+
     """
     if path_override is None:
         config_path = os.path.dirname(__file__)
@@ -61,7 +65,6 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     if not os.path.isfile(config_file):
         raise FileNotFoundError(f"config file '{config_file}' does not exist")
 
-    # TODO: Generalize this so it can accept both JSON and YAML, possibly even a two column csv/txt file
     with open(config_file, 'r') as cf:
         key_data = json.load(cf)
     val = key_data.get(key)
