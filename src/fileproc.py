@@ -69,12 +69,6 @@ class monitoring:
         RuntimeError
             If 'path' contains 'ref_delim'
 
-        Examples
-        ----------
-        >>> monitor = monitoring('/my/path')
-        >>> print(monitor.__module__)
-        src.fileproc
-
         """
         if config_path and not os.path.isdir(config_path):
             raise FileNotFoundError

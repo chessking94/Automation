@@ -50,13 +50,6 @@ class db:
         FileNotFoundError
             If config_path does not exist
 
-        Examples
-        ----------
-        >>> conn = db()
-        >>> print(conn.__module__)
-        src.db
-        >>> conn.close()
-
         """
         if not os.path.isdir(config_path):
             raise FileNotFoundError
@@ -129,12 +122,6 @@ WHERE job.name = '{job_name}'
         -------
         bool : Whether the job is still running at the time the script ends
 
-        Examples
-        --------
-        >>> conn = db()
-        >>> conn.run_job('My test job')
-        >>> conn.close()
-
         """
         wait_for_completion = wait_for_completion if wait_for_completion in BOOLEANS else False
         csr = self.conn.cursor()
@@ -173,12 +160,6 @@ WHERE job.name = '{job_name}'
         FileNotFoundError
             If root_path directory does not exists
             If mssql-script is not installed in the environment
-
-        Examples
-        --------
-        >>> conn = db()
-        >>> conn.script_objects('/my/path', 'MyServer', 'MyDatabase')
-        >>> conn.close()
 
         """
         if not os.path.isdir(root_path):

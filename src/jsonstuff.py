@@ -32,12 +32,6 @@ def reformat_json(path: str, file: str = None) -> list:
         If 'path' does not exist
         If 'file' is provided but does not exist
 
-    Examples
-    --------
-    >>> file_list = reformat_json('/my/path')
-    >>> print(file_list)
-    ['file1_reformat.json', 'file2_reformat.json']
-
     TODO
     ----
     Rework parameter 'file' into a list so multiple files can be passed

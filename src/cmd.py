@@ -43,11 +43,6 @@ class cmd:
             If the script_path location does not exist in the file system
             If the script_name file does not exist at the script_path location in the file system
 
-        Examples
-        ----------
-        >>> print(run_script('python', 'C:/Windows', 'test.py'))
-        0
-
         """
         if not os.path.isdir(script_path):
             raise FileNotFoundError
@@ -90,12 +85,6 @@ class cmd:
             If no command is provided
         FileNotFoundError
             If the command_path location does not exist in the file system
-
-        Examples
-        ----------
-        >>> cmd_text = 'echo test >> test.txt'
-        >>> print(run_command(cmd_text))
-        0
 
         """
         if not command:

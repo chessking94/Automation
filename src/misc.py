@@ -35,12 +35,6 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
         If 'path_override' directory does not exist
         If 'name_override' file does not exist
 
-    Examples
-    --------
-    >>> val = get_config('MyKey')
-    >>> print(val)
-    MyValue
-
     TODO
     ----
     Generalize so it can accept JSON, YAML, and a two column csv file
@@ -94,12 +88,6 @@ def csv_to_json(csvfile: str, delimiter: str = ',') -> dict:
         If delimiter is not in a validation list
     ValueError
         If the values in the first column of the csv are not unique
-
-    Examples
-    --------
-    >>> d = csv_to_dict('/mypath/myfile.csv')
-    >>> print(d)
-    {'Key1': {'Field1': '1'}, 'Key2': {'Field1': '2'}}
 
     """
     if delimiter not in VALID_DELIMS:
