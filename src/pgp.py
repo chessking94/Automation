@@ -1,8 +1,7 @@
 """pgp
 
 Author: Ethan Hunt
-Date: 2023-06-14
-Version: 2.0
+Creation Date: 2023-06-14
 
 """
 
@@ -20,11 +19,60 @@ from .secrets import keepass
 
 
 class pgp_constants:
+    """A class for constants necessary for the pgp module"""
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
 
 
 class pgp:
+    """Class implementation of PGP file handling
+
+    Attributes
+    ----------
+    name : str
+        Name of the PGP profile to use
+    extension : str
+        The expected PGP file extension (usually pgp or gpg)
+    encrypt_path : str
+        Default local directory to encrypt files from
+    decrypt_path : str
+        Default local directory to decrypt files from
+    suppress_encrypt : list
+        Specific files or wildcard names to not encrypt
+    suppress_decrypt : list
+        Specific files or wildcard names to not decrypt
+    public_key : str
+        Actual text of the public key
+    private_key : str
+        Actual text of the private key
+    passphrase : str
+        Passphrase for the private key
+    log_path : str
+        Directory in which log files will write to. Defined in the configuration file and will always be root/module_name
+    log_name : str
+        Name of log file, always module_yyyymmddHHMMSS.log
+    log_delim : str
+        Delimiter to use in the log file, defined in the configuration file
+
+    """
     def __init__(self, profile_name: str, config_path: str = None):
+        """Inits pgp class
+
+        Parameters
+        ----------
+        profile_name : str
+            Name of PGP profile
+        config_path : str, optional (default None)
+            Location of library configuration file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'config_path' does not exist
+        RuntimeError
+            If 'public_key' and 'private_key' values are missing
+            If 'private_key' is populated but 'passphrase' is missing
+
+        """
         if config_path and not os.path.isdir(config_path):
             raise FileNotFoundError
 
@@ -52,24 +100,25 @@ class pgp:
         self.private_key = kp.readattachment('PRIVATE.asc')
         self.passphrase = kp.getgeneral('Password')
 
-        self.error = None
         self.log_path = os.path.join(get_config('logRoot', config_path), pgp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
         self.log_delim = get_config('logDelimiter', config_path)
 
-        if self._validate_profile() is not None:
-            logging.critical(self.error)
+        self._validate_profile()
 
-    def _validate_profile(self) -> str:
+    def _validate_profile(self):
+        err_text = None
         if not self.public_key and not self.private_key:
-            self.error = f'No public or private keys|{self.name}'
+            err_text = f"no public or private keys for profile '{self.name}'"
 
         if self.private_key and not self.passphrase:
-            self.error = f'Private key with no passphrase|{self.name}'
+            err_text = f"private key with no passphrase for profile '{self.name}'"
 
-        return self.error
+        if err_text is not None:
+            raise RuntimeError(err_text)
 
     def _writelog(self, typ: str, dir: str, file_in: str, file_out: str):
+        """Class function to write to a log file"""
         if not os.path.isdir(self.log_path):
             os.mkdir(self.log_path)
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
@@ -78,6 +127,33 @@ class pgp:
             logfile.write(f'{dir}{self.log_delim}{file_in}{self.log_delim}{file_out}{NL}')
 
     def encrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True, write_log: bool = False) -> list:
+        """Encrypt files
+
+        Parameters
+        ----------
+        path_override : str, optional (default None)
+            Directory to encrypt. Will use self.encrypt_path if not provided
+        file_override : list or str, optional (default None)
+            File(s) to encrypt. Will encrypt all files in directory if not provided
+        archive : bool, optional (default True)
+            Indicator if original file(s) should move to an "Archive" subdirectory after encryption
+        write_log : bool, optional (default False)
+            Indicator if files encrypted should be written to a log file
+
+        Returns
+        -------
+        list : All files that were encrypted, or an empty list if no files were encrypted
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'path_override' does not exist
+
+        TODO
+        ----
+        Excel/Word/Office files fail to encrypt because they are not text-based, how can I fix?
+
+        """
         path_override = self.encrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
         write_log = write_log if write_log in BOOLEANS else False
@@ -119,7 +195,7 @@ class pgp:
                 except ValueError:
                     is_encrypted = False
                 except NotImplementedError:
-                    logging.critical(f'unable to read file {f}')  # TODO: Excel/Word/Office files fail, how can I fix?
+                    logging.critical(f'unable to read file {f}')
                     is_encrypted = True
 
                 if not is_encrypted:
@@ -142,6 +218,29 @@ class pgp:
         return success_list
 
     def decrypt(self, path_override: str = None, file_override: list | str = None, archive: bool = True, write_log: bool = False) -> list:
+        """Decrypt files
+
+        Parameters
+        ----------
+        path_override : str, optional (default None)
+            Directory to decrypt. Will use self.decrypt_path if not provided
+        file_override : list or str, optional (default None)
+            File(s) to decrypt. Will decrypt all files in directory if not provided
+        archive : bool, optional (default True)
+            Indicator if original file(s) should move to an "Archive" subdirectory after decryption
+        write_log : bool, optional (default False)
+            Indicator if files decrypted should be written to a log file
+
+        Returns
+        -------
+        list : All files that were decrypted, or an empty list if no files were decrypted
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'path_override' does not exist
+
+        """
         path_override = self.decrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
         write_log = write_log if write_log in BOOLEANS else False
