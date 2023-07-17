@@ -1,8 +1,7 @@
 """office
 
 Author: Ethan Hunt
-Date: 2023-06-20
-Version: 1.0
+Creation Date: 2023-06-20
 
 """
 
@@ -20,10 +19,12 @@ from .constants import VALID_DELIMS as VALID_DELIMS
 
 
 class convert():
+    """Class to perform common file conversions"""
     def __init__(self):
         pass
 
     def _guessdelimiter(self, filename: str) -> str:
+        """Class function to guess the delimiter in a csv file"""
         with open(filename, mode='r', encoding='utf-8') as f:
             sniffer = csv.Sniffer()
             dialect = sniffer.sniff(f.readline())
@@ -31,9 +32,37 @@ class convert():
         logging.debug(f'delim guess|{delim}')
         return delim
 
-    def extract_columns(self, filename: str, columns: list) -> str:
-        # validate columns and make sure its the proper data type
-        columns = [columns] if isinstance(columns, str) else columns  # convert single column to a list
+    def extract_columns(self, filename: str, columns: list | str) -> str:
+        """Extract specific columns from a csv file
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        columns : list or str
+            The headers of the columns to extract
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        TypeError
+            If 'columns' is not a list
+        FileNotFoundError
+            If 'filename' does not exist
+        FileExistsError
+            If file with the same name as the would-be extracted file already exists
+        NotImplementedError
+            If the guessed delimiter in the csv file is not in a predefined list
+
+        TODO
+        ----
+        Generalize 'columns' so it can accept positions in the event a file has no headers
+
+        """
+        columns = [columns] if isinstance(columns, str) else columns  # convert single column passed as str to a list
         if not isinstance(columns, list):
             raise TypeError('invalid columns')
 
@@ -63,6 +92,31 @@ class convert():
         return output_file
 
     def change_delimiter(self, filename: str, old_delim: str = None, new_delim: str = None) -> str:
+        """Change the delimiter of a csv file
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        old_delim : str, optional (default None)
+            Original delimiter of the csv file. Uses method self._guessdelimiter if not provided
+        new_delim : str, optional (default None)
+            Delimiter to change into
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+        FileExistsError
+            If file with the same name as the newly-delimited file already exists
+        NotImplementedError
+            If the guessed delimiter in the csv file is not in a predefined list
+
+        """
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
@@ -84,6 +138,31 @@ class convert():
         return output_file
 
     def csv_to_excel(self, filename: str, delim: str = None) -> str:
+        """Convert a csv file into Excel (xlsx)
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        delim : str, optional (default None)
+            Delimiter of the csv file. Uses method self._guessdelimiter if not provided
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+        NotImplementedError
+            If the guessed delimiter in the csv file is not in a predefined list
+
+        Notes
+        -----
+        All columns of the new Excel file will be formatted as text
+
+        """
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
@@ -97,7 +176,7 @@ class convert():
         output_file = os.path.join(path, new_file)
 
         if os.path.isfile(output_file):
-            logging.warning(f'File {file} has already been converted to Excel')
+            logging.warning(f"File '{file}' has already been converted to Excel")
         else:
             df = pd.read_csv(filename, sep=delim)
             wb = xl.Workbook(output_file)
@@ -116,6 +195,28 @@ class convert():
         return output_file
 
     def excel_to_csv(self, filename: str, delim: str = ',') -> str:
+        """Convert an Excel file into csv
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        delim : str, optional (default None)
+            Delimiter to use for the csv file
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+        NotImplementedError
+            If 'delim' is not in a predefined list
+            If the extension of the Excel file is not in a predefined list
+
+        """
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
@@ -147,6 +248,25 @@ class convert():
         return output_file
 
     def word_to_pdf(self, filename: str) -> str:
+        """Convert a Word file into pdf
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+        NotImplementedError
+            If the extension of the Word file is not in a predefined list
+
+        """
         if not os.path.isfile(filename):
             raise FileNotFoundError
 
@@ -170,14 +290,38 @@ class convert():
 
 
 class excel():
+    """Class for often-used Excel functionality"""
     def __init__(self):
         pass
 
     def refresh_file(self, filename: str, save_copy: bool = True) -> str:
+        """Refresh all data connections
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        save_copy : bool, optional (default True)
+            Indicator whether to save a new copy of 'filename', with "yyyymmdd HHMM" appended
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+
+        """
         save_copy = save_copy if save_copy in BOOLEANS else True
+
+        if not os.path.isfile(filename):
+            raise FileNotFoundError
 
         excel = client.gencache.EnsureDispatch('Excel.Application')
         wb = excel.Workbooks.Open(filename)
+        dte = dt.datetime.now().strftime('%Y%m%d %H%M')
 
         # refresh all data connections, followed by any separate pivot tables
         wb.RefreshAll()
@@ -188,7 +332,6 @@ class excel():
 
         output_file = filename
         if save_copy:
-            dte = dt.datetime.now().strftime('%Y%m%d %H%M')
             new_filename = f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}'
             wb.SaveAs(new_filename)
             output_file = new_filename
@@ -201,12 +344,37 @@ class excel():
         return output_file
 
     def run_vba(self, filename: str, macro_name: str = None, save_copy: bool = True) -> str:
+        """Execute VBA
+
+        Parameters
+        ----------
+        filename : str
+            The full name of the original file
+        macro_name : str, optional (default None)
+            Name of the macro to run; if provided, will use the name of the first (only) macro in the file
+        save_copy : bool, optional (default True)
+            Indicator whether to save a new copy of 'filename', with "yyyymmdd HHMM" appended
+
+        Returns
+        -------
+        str : The full name of the output file
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'filename' does not exist
+        NotImplementedError
+            If no value was provided for 'macro_name' and the file does not have exactly 1 macro
+
+        """
         save_copy = save_copy if save_copy in BOOLEANS else True
+
+        if not os.path.isfile(filename):
+            raise FileNotFoundError
 
         excel = client.Dispatch('Excel.Application')
         wb = excel.Workbooks.Open(filename)
 
-        # run the macro if provided, otherwise run the first (only) macro in the file
         if macro_name is None:
             try:
                 macro_ct = wb.VBProject.VBCompenents.Count
