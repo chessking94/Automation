@@ -1,8 +1,7 @@
 """jsonstuff
 
 Author: Ethan Hunt
-Date: 2023-06-17
-Version: 1.0
+Creation Date: 2023-06-17
 
 """
 
@@ -12,6 +11,32 @@ import json
 
 
 def reformat_json(path: str, file: str = None) -> list:
+    """Beautifies a JSON file
+
+    Reformats a JSON/dictionary file from a single line into something more human-readable
+
+    Parameters
+    ----------
+    path : str
+        Directory file(s) will be located in
+    file : str, optional (default None)
+        Name of file to reformat. Will reformat all files in 'path' if not provided.
+
+    Returns
+    -------
+    list : The basename(s) of the file(s) reformatted.
+
+    Raises
+    ------
+    FileNotFoundError
+        If 'path' does not exist
+        If 'file' is provided but does not exist
+
+    TODO
+    ----
+    Rework parameter 'file' into a list so multiple files can be passed
+
+    """
     if not os.path.isdir(path):
         raise FileNotFoundError(f'Path {path} does not exist!')
 
