@@ -145,6 +145,8 @@ class sftp:
         self.log_delim = get_config('logDelimiter', config_path)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
+        self._validate_profile()
+
     def _validate_profile(self):
         err_text = None
         if not self.host:
@@ -242,12 +244,12 @@ class sftp:
 
         Parameters
         ----------
-        remote_dir : str
-            Remote directory to download files from
-        local_dir : str
-            Local directory to download files to
+        remote_dir : str, optional (default None)
+            Remote directory to download files from. Will use self.remote_in if not provided
+        local_dir : str, optional (default None)
+            Local directory to download files to. Will use self.local_in if not provided
         remote_files : list or str, optional (default None)
-            Specific files or wildcard names to download
+            Specific files or wildcard names to download. Will use all files in remote_dir if not provided
         delete_ftp : bool, optional (default True)
             Indicator if files should be deleted from the SFTP after download is completed
         write_log : bool, optional (default False)
@@ -260,7 +262,7 @@ class sftp:
         Raises
         ------
         FileNotFoundError
-            If 'lcoal_dir' does not exist
+            If 'local_dir' does not exist
 
         TODO
         ----
@@ -324,12 +326,12 @@ class sftp:
 
         Parameters
         ----------
-        remote_dir : str
-            Remote directory to upload files to
-        local_dir : str
-            Local directory to upload files from
+        remote_dir : str, optional (default None)
+            Remote directory to upload files to. Will use self.remote_out if not providied
+        local_dir : str, optional (default None)
+            Local directory to upload files from. Will use self.local_out if not provided
         local_files : list or str, optional (default None)
-            Specific files or wildcard names to upload
+            Specific files or wildcard names to upload. Will use all files in local_dir if not provided
         write_log : bool, optional (default False)
             Indicator if files uploaded should be written to a log file
 
@@ -340,7 +342,7 @@ class sftp:
         Raises
         ------
         FileNotFoundError
-            If 'lcoal_dir' does not exist
+            If 'local_dir' does not exist
 
         TODO
         ----

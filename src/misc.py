@@ -21,7 +21,7 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     key : str
         Name of key to use
     path_override : str, optional (default None)
-        Custom location of configuration file, default location is in the parent directory of this file
+        Custom location of configuration file, will use the parent directory of this file if not provided
     name_override : str, optional (default "config.json")
         Name of configuration file
 
