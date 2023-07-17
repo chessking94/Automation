@@ -97,7 +97,7 @@ class sftp:
         Look into error handling if private key is not an RSA key
 
         """
-        if not os.path.isdir(config_path):
+        if config_path and not os.path.isdir(config_path):
             raise FileNotFoundError
 
         kp = keepass(

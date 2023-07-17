@@ -166,54 +166,53 @@ class pgp:
         file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
 
         success_list = []
-        if self.error is None:
-            directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
-            if len(file_override) == 0:
-                # no specific files passed, use standard config parameters
-                suppress_list = []
-                for f in directory_list:
-                    for suppress_item in self.suppress_encrypt:
-                        if fnmatch.fnmatch(f, suppress_item):
-                            suppress_list.append(f)
+        directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
+        if len(file_override) == 0:
+            # no specific files passed, use standard config parameters
+            suppress_list = []
+            for f in directory_list:
+                for suppress_item in self.suppress_encrypt:
+                    if fnmatch.fnmatch(f, suppress_item):
+                        suppress_list.append(f)
 
-                encrypt_files = [x for x in directory_list if x not in suppress_list]
-            else:
-                # specific files/wildcards provided, bypass config parameters
-                encrypt_list = []
-                for f in directory_list:
-                    for include_file in file_override:
-                        if fnmatch.fnmatch(f, include_file):
-                            encrypt_list.append(f)
-                encrypt_files = [x for x in encrypt_list if os.path.isfile(os.path.join(path_override, x))]
+            encrypt_files = [x for x in directory_list if x not in suppress_list]
+        else:
+            # specific files/wildcards provided, bypass config parameters
+            encrypt_list = []
+            for f in directory_list:
+                for include_file in file_override:
+                    if fnmatch.fnmatch(f, include_file):
+                        encrypt_list.append(f)
+            encrypt_files = [x for x in encrypt_list if os.path.isfile(os.path.join(path_override, x))]
 
-            pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
-            for f in encrypt_files:
-                try:
-                    pgpy.PGPMessage.from_file(os.path.join(path_override, f))
-                    is_encrypted = True
-                    logging.warning(f'File is already encrypted|{f}')
-                except ValueError:
-                    is_encrypted = False
-                except NotImplementedError:
-                    logging.critical(f'unable to read file {f}')
-                    is_encrypted = True
+        pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
+        for f in encrypt_files:
+            try:
+                pgpy.PGPMessage.from_file(os.path.join(path_override, f))
+                is_encrypted = True
+                logging.warning(f'File is already encrypted|{f}')
+            except ValueError:
+                is_encrypted = False
+            except NotImplementedError:
+                logging.critical(f'unable to read file {f}')
+                is_encrypted = True
 
-                if not is_encrypted:
-                    data = pgpy.PGPMessage.new(os.path.join(path_override, f), file=True)
-                    encrypted_data = bytes(pub_key.encrypt(data))
-                    encrypted_file = os.path.join(path_override, f'{f}.{self.extension}')
-                    with open(encrypted_file, 'wb') as ef:
-                        ef.write(encrypted_data)
+            if not is_encrypted:
+                data = pgpy.PGPMessage.new(os.path.join(path_override, f), file=True)
+                encrypted_data = bytes(pub_key.encrypt(data))
+                encrypted_file = os.path.join(path_override, f'{f}.{self.extension}')
+                with open(encrypted_file, 'wb') as ef:
+                    ef.write(encrypted_data)
 
-                    success_list.append(encrypted_file)
-                    if write_log:
-                        self._writelog('ENCRYPT', path_override, f, os.path.basename(encrypted_file))
+                success_list.append(encrypted_file)
+                if write_log:
+                    self._writelog('ENCRYPT', path_override, f, os.path.basename(encrypted_file))
 
-                    if archive:
-                        archive_dir = os.path.join(path_override, 'Archive')
-                        if os.path.isdir(archive_dir):
-                            archive_name = os.path.join(archive_dir, f)
-                            os.rename(os.path.join(path_override, f), archive_name)
+                if archive:
+                    archive_dir = os.path.join(path_override, 'Archive')
+                    if os.path.isdir(archive_dir):
+                        archive_name = os.path.join(archive_dir, f)
+                        os.rename(os.path.join(path_override, f), archive_name)
 
         return success_list
 
@@ -253,63 +252,62 @@ class pgp:
         file_override = file_override if isinstance(file_override, list) else []  # convert to empty list if not already a list type
 
         success_list = []
-        if self.error is None:
-            directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
-            if len(file_override) == 0:
-                # no specific files passed, use standard config parameters
-                suppress_list = []
-                for f in directory_list:
-                    for suppress_item in self.suppress_decrypt:
-                        if fnmatch.fnmatch(f, suppress_item):
-                            suppress_list.append(f)
+        directory_list = [f for f in os.listdir(path_override) if os.path.isfile(os.path.join(path_override, f))]
+        if len(file_override) == 0:
+            # no specific files passed, use standard config parameters
+            suppress_list = []
+            for f in directory_list:
+                for suppress_item in self.suppress_decrypt:
+                    if fnmatch.fnmatch(f, suppress_item):
+                        suppress_list.append(f)
 
-                decrypt_files = [x for x in directory_list if x not in suppress_list]
-            else:
-                # specific files/wildcards provided, bypass config parameters
-                decrypt_list = []
-                for f in directory_list:
-                    for include_file in file_override:
-                        if fnmatch.fnmatch(f, include_file):
-                            decrypt_list.append(f)
-                decrypt_files = [x for x in decrypt_list if os.path.isfile(os.path.join(path_override, x))]
+            decrypt_files = [x for x in directory_list if x not in suppress_list]
+        else:
+            # specific files/wildcards provided, bypass config parameters
+            decrypt_list = []
+            for f in directory_list:
+                for include_file in file_override:
+                    if fnmatch.fnmatch(f, include_file):
+                        decrypt_list.append(f)
+            decrypt_files = [x for x in decrypt_list if os.path.isfile(os.path.join(path_override, x))]
 
-            prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
-            with prv_key.unlock(self.passphrase):
-                for f in decrypt_files:
-                    done = False
-                    try:
-                        encrypted_data = pgpy.PGPMessage.from_file(os.path.join(path_override, f))
-                    except ValueError:
-                        logging.warning(f'File is already decrypted|{f}')
-                        done = True
+        prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
+        with prv_key.unlock(self.passphrase):
+            for f in decrypt_files:
+                done = False
+                try:
+                    encrypted_data = pgpy.PGPMessage.from_file(os.path.join(path_override, f))
+                except ValueError:
+                    logging.warning(f'File is already decrypted|{f}')
+                    done = True
 
-                    if not done:
-                        decrypted_data = prv_key.decrypt(encrypted_data).message
-                        if not isinstance(decrypted_data, bytearray):
-                            decrypted_data = bytearray(decrypted_data, encoding='utf-8')  # convert to bytes otherwise there's an extra <CR>
+                if not done:
+                    decrypted_data = prv_key.decrypt(encrypted_data).message
+                    if not isinstance(decrypted_data, bytearray):
+                        decrypted_data = bytearray(decrypted_data, encoding='utf-8')  # convert to bytes otherwise there's an extra <CR>
 
-                        # strip off pgp, gpg, and self.extension
-                        decrypted_name = f
-                        if decrypted_name.endswith(('.pgp', '.gpg')):
-                            decrypted_name = decrypted_name[:-4]
-                        if decrypted_name.endswith(f'.{self.extension}'):
-                            ext_len = len(self.extension)
-                            decrypted_name = decrypted_name[:-ext_len]
+                    # strip off pgp, gpg, and self.extension
+                    decrypted_name = f
+                    if decrypted_name.endswith(('.pgp', '.gpg')):
+                        decrypted_name = decrypted_name[:-4]
+                    if decrypted_name.endswith(f'.{self.extension}'):
+                        ext_len = len(self.extension)
+                        decrypted_name = decrypted_name[:-ext_len]
 
-                        decrypted_file = os.path.join(path_override, decrypted_name)
-                        if os.path.isfile(decrypted_file):
-                            decrypted_file = f'{decrypted_file}.out'
-                        with open(decrypted_file, 'wb') as df:
-                            df.write(decrypted_data)
+                    decrypted_file = os.path.join(path_override, decrypted_name)
+                    if os.path.isfile(decrypted_file):
+                        decrypted_file = f'{decrypted_file}.out'
+                    with open(decrypted_file, 'wb') as df:
+                        df.write(decrypted_data)
 
-                        success_list.append(decrypted_file)
-                        if write_log:
-                            self._writelog('DECRYPT', path_override, f, os.path.basename(decrypted_file))
+                    success_list.append(decrypted_file)
+                    if write_log:
+                        self._writelog('DECRYPT', path_override, f, os.path.basename(decrypted_file))
 
-                        if archive:
-                            archive_dir = os.path.join(path_override, 'Archive')
-                            if os.path.isdir(archive_dir):
-                                archive_name = os.path.join(archive_dir, f)
-                                os.rename(os.path.join(path_override, f), archive_name)
+                    if archive:
+                        archive_dir = os.path.join(path_override, 'Archive')
+                        if os.path.isdir(archive_dir):
+                            archive_name = os.path.join(archive_dir, f)
+                            os.rename(os.path.join(path_override, f), archive_name)
 
         return success_list

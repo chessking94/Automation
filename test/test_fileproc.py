@@ -10,9 +10,7 @@ FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'fileproc')
 
 class TestMonitoring(unittest.TestCase):
     def test_monitoring_invalid_path(self):
-        with self.assertLogs(level='CRITICAL') as log:
-            _ = fileproc.monitoring(path='/this/path/is/bad')
-            self.assertIn('Path does not exist', log.output[0])
+        self.assertRaises(FileNotFoundError, fileproc.monitoring, '/this/path/is/bad')
 
     def test_monitoring_invalid_path_character(self):
         refdelim = get_config('fileproc_referenceDelimiter')
@@ -25,9 +23,7 @@ class TestMonitoring(unittest.TestCase):
             go = False
 
         if go:
-            with self.assertLogs(level='CRITICAL') as log:
-                _ = fileproc.monitoring(path=test_path)
-                self.assertIn('Path contains referenceDelimiter', log.output[0])
+            self.assertRaises(RuntimeError, fileproc.monitoring, test_path)
             if os.path.isdir(test_path):
                 shutil.rmtree(test_path)
         else:
