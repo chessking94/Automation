@@ -4,6 +4,7 @@ including SFTP interaction, PGP handling,
 and CSV and Office file conversions.
 """
 
+__name__ = 'automation'
 __author__ = 'Ethan Hunt'
 __version__ = '1.0.1'
 

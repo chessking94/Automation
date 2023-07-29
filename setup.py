@@ -3,7 +3,7 @@ from setuptools import setup
 import src
 
 setup(
-    name='automation',
+    name=src.__name__,
     version=src.__version__,
     author=src.__author__,
     description=src.__doc__.replace("\n", " ").strip(),

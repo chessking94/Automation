@@ -1,6 +1,5 @@
 .vscode
 conf
-dist
 local
 logs
 __pycache__
