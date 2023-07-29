@@ -14,8 +14,7 @@ import stat
 
 import paramiko
 
-from .constants import NL as NL
-from .constants import BOOLEANS as BOOLEANS
+from . import NL, BOOLEANS
 from .misc import get_config as get_config
 from .secrets import keepass
 

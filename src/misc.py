@@ -10,7 +10,7 @@ import csv
 import json
 import os
 
-from .constants import VALID_DELIMS as VALID_DELIMS
+from . import VALID_DELIMS
 
 
 def get_config(key: str, path_override: str = None, name_override: str = 'config.json') -> str:

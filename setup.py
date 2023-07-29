@@ -1,9 +1,12 @@
 from setuptools import setup
 
+import src
+
 setup(
     name='automation',
-    version='1.0.0',
-    author='Ethan Hunt',
+    version=src.__version__,
+    author=src.__author__,
+    description=src.__doc__.replace("\n", " ").strip(),
     license='GPL-3.0+',
     url='https://github.com/chessking94/Automation',
     python_requires='>=3.10',
@@ -11,8 +14,8 @@ setup(
     package_dir={'automation': 'src'},
     test_suite='test',
     install_requires=[
-        'pandas==2.0.2',
-        'paramiko==3.2.0',
+        'pandas==2.0.3',
+        'paramiko==3.3.1',
         'PGPy==0.6.0',
         'pykeepass==4.0.5',
         'pyodbc==4.0.39',

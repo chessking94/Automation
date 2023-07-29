@@ -11,8 +11,7 @@ import os
 import tempfile
 import shutil
 
-from .constants import BOOLEANS as BOOLEANS
-from .constants import NL as NL
+from . import BOOLEANS, NL
 from .misc import get_config as get_config
 
 

@@ -14,8 +14,7 @@ import pandas as pd
 from win32com import client
 import xlsxwriter as xl
 
-from .constants import BOOLEANS as BOOLEANS
-from .constants import VALID_DELIMS as VALID_DELIMS
+from . import BOOLEANS, VALID_DELIMS
 
 
 class convert():
