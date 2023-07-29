@@ -32,15 +32,15 @@ class convert():
         logging.debug(f'delim guess|{delim}')
         return delim
 
-    def extract_columns(self, filename: str, columns: list | str) -> str:
+    def extract_columns(self, filename: str, columns: list | str | int) -> str:
         """Extract specific columns from a csv file
 
         Parameters
         ----------
         filename : str
             The full name of the original file
-        columns : list or str
-            The headers of the columns to extract
+        columns : list, str, or int
+            The headers or 0-based positions of the columns to extract
 
         Returns
         -------
@@ -49,22 +49,34 @@ class convert():
         Raises
         ------
         TypeError
-            If 'columns' is not a list
+            If 'columns' is not a list or contains an element that is not a string or integer
         FileNotFoundError
             If 'filename' does not exist
         FileExistsError
             If file with the same name as the would-be extracted file already exists
         NotImplementedError
+            If columns passed are a mix of string names and integer positions
             If the guessed delimiter in the csv file is not in a predefined list
-
-        TODO
-        ----
-        Generalize 'columns' so it can accept positions in the event a file has no headers
 
         """
         columns = [columns] if isinstance(columns, str) else columns  # convert single column passed as str to a list
+        columns = [columns] if isinstance(columns, int) else columns  # convert single column passed as int to a list
         if not isinstance(columns, list):
             raise TypeError('invalid columns')
+
+        # validate columns
+        isstr = False
+        isint = False
+        for i in columns:
+            if isinstance(i, str):
+                isstr = True
+            else:
+                if isinstance(i, int):
+                    isint = True
+                else:
+                    raise TypeError('invalid columns')
+        if isstr and isint:
+            raise NotImplementedError('mix of string and integer column references')
 
         if not os.path.isfile(filename):
             raise FileNotFoundError
@@ -80,11 +92,18 @@ class convert():
                 raise NotImplementedError(f"invalid delimiter: {delim}")
 
             df = pd.read_csv(filename, dtype=str, sep=delim)
-            df_filtered = df[columns]
+            if isstr:
+                df_filtered = df[columns]
+            else:
+                df_filtered = df.iloc[:, columns]
             df_filtered.to_csv(output_file, index=False)
         elif ext in ['.xlsx', '.xls', '.xlsm']:
             df = pd.read_excel(filename, engine='openpyxl')
-            df.to_excel(output_file, columns=columns, index=False)
+            if isstr:
+                df_filtered = df[columns]
+            else:
+                df_filtered = df.iloc[:, columns]
+            df_filtered.to_excel(output_file, index=False)
         else:
             output_file = None
             logging.critical(f'Other extensions not currently supported|{filename}')
