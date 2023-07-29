@@ -5,7 +5,7 @@ and CSV and Office file conversions.
 """
 
 __author__ = 'Ethan Hunt'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 # globals
 NL = '\n'
