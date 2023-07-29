@@ -10,7 +10,7 @@ import os
 import json
 
 
-def reformat_json(path: str, file: str = None) -> list:
+def reformat_json(path: str, files: list | str = None) -> list:
     """Beautifies a JSON file
 
     Reformats a JSON/dictionary file from a single line into something more human-readable
@@ -19,8 +19,8 @@ def reformat_json(path: str, file: str = None) -> list:
     ----------
     path : str
         Directory file(s) will be located in
-    file : str, optional (default None)
-        Name of file to reformat. Will reformat all files in 'path' if not provided.
+    files : list or str, optional (default None)
+        Specific file(s) to reformat. Will reformat all files in 'path' if not provided.
 
     Returns
     -------
@@ -32,25 +32,25 @@ def reformat_json(path: str, file: str = None) -> list:
         If 'path' does not exist
         If 'file' is provided but does not exist
 
-    TODO
-    ----
-    Rework parameter 'file' into a list so multiple files can be passed
-
     """
     if not os.path.isdir(path):
         raise FileNotFoundError(f'Path {path} does not exist!')
 
+    files = [files] if isinstance(files, str) else files  # convert single files to a list
+    files = files if isinstance(files, list) else []  # convert to empty list if not already a list type
+
     name_append = '_reformat'
     json_list = []
-    if file is None:
+    if len(files) == 0:
         for f in os.listdir(path):
             if fnmatch.fnmatch(f, '*.json') and name_append not in f:
                 json_list.append(f)
     else:
-        if os.path.isfile(os.path.join(path, file)):
-            json_list.append(file)
-        else:
-            raise FileNotFoundError(f'File {file} does not exist!')
+        for f in files:
+            if os.path.isfile(os.path.join(path, f)):
+                json_list.append(f)
+            else:
+                raise FileNotFoundError(f'File {f} does not exist!')  # perhaps a bit aggresive, but don't be stupid!
 
     file_list = []
     for json_orig in json_list:

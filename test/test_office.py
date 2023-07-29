@@ -35,7 +35,7 @@ class TestConvert(unittest.TestCase):
         filename = os.path.join(FILE_DIR, file)
         self.assertRaises(FileExistsError, self.cvrt.extract_columns, filename, ['column1', 'column3'])
 
-    def test_extract_columns_csv(self):
+    def test_extract_columns_csv_columnname(self):
         file = 'extractcolumns2.csv'
         cvrt_file = 'extractcolumns2_filtered.csv'
         filename = os.path.join(FILE_DIR, file)
@@ -43,12 +43,28 @@ class TestConvert(unittest.TestCase):
         self.result_file = self.cvrt.extract_columns(filename, ['column1', 'column3'])
         self.assertEqual(self.result_file, cvrt_filename)
 
-    def test_extract_columns_excel(self):
+    def test_extract_columns_csv_columnindex(self):
+        file = 'extractcolumns2.csv'
+        cvrt_file = 'extractcolumns2_filtered.csv'
+        filename = os.path.join(FILE_DIR, file)
+        cvrt_filename = os.path.join(FILE_DIR, cvrt_file)
+        self.result_file = self.cvrt.extract_columns(filename, [0, 2])
+        self.assertEqual(self.result_file, cvrt_filename)
+
+    def test_extract_columns_excel_columnname(self):
         file = 'extractcolumns1.xlsx'
         cvrt_file = 'extractcolumns1_filtered.xlsx'
         filename = os.path.join(FILE_DIR, file)
         cvrt_filename = os.path.join(FILE_DIR, cvrt_file)
         self.result_file = self.cvrt.extract_columns(filename, ['column1', 'column3'])
+        self.assertEqual(self.result_file, cvrt_filename)
+
+    def test_extract_columns_excel_columnindex(self):
+        file = 'extractcolumns1.xlsx'
+        cvrt_file = 'extractcolumns1_filtered.xlsx'
+        filename = os.path.join(FILE_DIR, file)
+        cvrt_filename = os.path.join(FILE_DIR, cvrt_file)
+        self.result_file = self.cvrt.extract_columns(filename, [0, 2])
         self.assertEqual(self.result_file, cvrt_filename)
 
     def test_extract_columns_notimplemented(self):

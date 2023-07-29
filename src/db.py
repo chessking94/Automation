@@ -14,7 +14,7 @@ import time
 import pandas as pd
 import pyodbc as sql
 
-from .constants import BOOLEANS as BOOLEANS
+from . import BOOLEANS
 from .misc import get_config as get_config
 
 

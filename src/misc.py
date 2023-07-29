@@ -10,7 +10,7 @@ import csv
 import json
 import os
 
-from .constants import VALID_DELIMS as VALID_DELIMS
+from . import VALID_DELIMS
 
 
 def get_config(key: str, path_override: str = None, name_override: str = 'config.json') -> str:
@@ -31,6 +31,8 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
 
     Raises
     ------
+    RuntimeError
+        If no 'path_override' is provided and environment variable "CONFIGPATH" does not exist
     FileNotFoundError
         If 'path_override' directory does not exist
         If 'name_override' file does not exist
@@ -41,9 +43,10 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
 
     """
     if path_override is None:
-        config_path = os.path.dirname(__file__)
-        for _ in range(1):  # predefined to be one directory above the location of this file
-            config_path = os.path.dirname(config_path)
+        if os.getenv('CONFIGPATH') is not None:
+            config_path = os.getenv('CONFIGPATH')
+        else:
+            raise RuntimeError('unable to determine config path')
     else:
         config_path = path_override
 

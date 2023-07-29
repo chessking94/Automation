@@ -31,8 +31,13 @@ class TestJsonstuff(unittest.TestCase):
         self.file_list = jsonstuff.reformat_json(FILE_DIR, fname)
         self.assertEqual(len(self.file_list), 0)
 
-    def test_reformat_json_multiple_files(self):
+    def test_reformat_json_multiple_files_implicit(self):
         self.file_list = jsonstuff.reformat_json(FILE_DIR)
+        self.assertEqual(len(self.file_list), 2)
+
+    def test_reformat_json_multiple_files_explicit(self):
+        files = ['jsonstuff_test1.json', 'jsonstuff_test3.json']
+        self.file_list = jsonstuff.reformat_json(FILE_DIR, files)
         self.assertEqual(len(self.file_list), 2)
 
 
