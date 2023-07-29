@@ -345,7 +345,7 @@ class sftp:
 
         TODO
         ----
-        Review logic for custom file downloads, seems really ugly and there should be a cleaner approach instead of multiple list iterations
+        Review logic for custom file uploads, seems really ugly and there should be a cleaner approach instead of multiple list iterations
 
         """
         remote_dir = self.remote_out if remote_dir is None else remote_dir

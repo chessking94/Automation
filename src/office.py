@@ -333,8 +333,7 @@ class excel():
 
         TODO
         ----
-        Custom naming convention option when save_copy is True
-        Way to check if there is any data in a refreshed table?
+        Way to check if there is any data in a refreshed table and not save if nothing?
 
         """
         save_copy = save_copy if save_copy in BOOLEANS else True
@@ -388,11 +387,6 @@ class excel():
             If 'filename' does not exist
         NotImplementedError
             If no value was provided for 'macro_name' and the file does not have exactly 1 macro
-
-        TODO
-        ----
-        Custom naming convention option when save_copy is True
-        Way to check if there is any data in a refreshed table?
 
         """
         save_copy = save_copy if save_copy in BOOLEANS else True

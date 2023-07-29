@@ -44,11 +44,6 @@ class monitoring:
     ref_delim : str
         Delimiter to use in the reference file logging the last datetime of monitoring review, defined in the configuration file
 
-    TODO
-    ----
-    Mass move files from one location to another? Perhaps too general and shutil is good enough
-    Handling/logging around receiving servicer files, possibly already accomplished with modified_files' write_log parameter
-
     """
     def __init__(self, path: str, config_path: str = None):
         """Inits monitoring class
