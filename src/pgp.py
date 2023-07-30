@@ -148,10 +148,6 @@ class pgp:
         FileNotFoundError
             If 'path_override' does not exist
 
-        TODO
-        ----
-        Excel/Word/Office files fail to encrypt because they are not text-based, how can I fix?
-
         """
         path_override = self.encrypt_path if path_override is None else path_override
         archive = archive if archive in BOOLEANS else False
@@ -186,15 +182,19 @@ class pgp:
 
         pub_key, _ = pgpy.PGPKey.from_blob(self.public_key)
         for f in encrypt_files:
+            with open(os.path.join(path_override, f), 'rb') as file:
+                data = file.read()
             try:
-                pgpy.PGPMessage.from_file(os.path.join(path_override, f))
-                is_encrypted = True
-                logging.warning(f'File is already encrypted|{f}')
-            except ValueError:
+                message = pgpy.PGPMessage.from_blob(data)
+                if message.is_encrypted:
+                    is_encrypted = True
+                    logging.warning(f'File is already encrypted|{f}')
+                else:
+                    is_encrypted = False
+            except (ValueError, NotImplementedError):
+                # ValueError = File not encrypted
+                # NotImplementedError = File not encrypted, but unable to read binary file (i.e. Office files)
                 is_encrypted = False
-            except NotImplementedError:
-                logging.critical(f'unable to read file {f}')
-                is_encrypted = True
 
             if not is_encrypted:
                 data = pgpy.PGPMessage.new(os.path.join(path_override, f), file=True)
@@ -273,14 +273,22 @@ class pgp:
         prv_key, _ = pgpy.PGPKey.from_blob(self.private_key)
         with prv_key.unlock(self.passphrase):
             for f in decrypt_files:
-                done = False
+                with open(os.path.join(path_override, f), 'rb') as file:
+                    data = file.read()
                 try:
-                    encrypted_data = pgpy.PGPMessage.from_file(os.path.join(path_override, f))
-                except ValueError:
-                    logging.warning(f'File is already decrypted|{f}')
+                    encrypted_data = pgpy.PGPMessage.from_blob(data)
+                    if not encrypted_data.is_encrypted:
+                        done = True
+                    else:
+                        done = False
+                except (ValueError, NotImplementedError):
+                    # ValueError = File not encrypted
+                    # NotImplementedError = File not encrypted, but unable to read binary file (i.e. Office files)
                     done = True
 
-                if not done:
+                if done:
+                    logging.warning(f'File is already decrypted|{f}')
+                else:
                     decrypted_data = prv_key.decrypt(encrypted_data).message
                     if not isinstance(decrypted_data, bytearray):
                         decrypted_data = bytearray(decrypted_data, encoding='utf-8')  # convert to bytes otherwise there's an extra <CR>
