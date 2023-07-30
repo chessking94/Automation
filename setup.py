@@ -2,6 +2,10 @@ from setuptools import setup
 
 import src
 
+with open('requirements.txt', 'r') as req_file:
+    lines = req_file.readlines()
+    req_list = [line.strip() for line in lines]
+
 setup(
     name=src.__name__,
     version=src.__version__,
@@ -13,13 +17,5 @@ setup(
     packages=['automation'],
     package_dir={'automation': 'src'},
     test_suite='test',
-    install_requires=[
-        'pandas==2.0.3',
-        'paramiko==3.3.1',
-        'PGPy==0.6.0',
-        'pykeepass==4.0.5',
-        'pyodbc==4.0.39',
-        'pywin32==306',
-        'XlsxWriter==3.1.2'
-    ]
+    install_requires=req_list
 )
