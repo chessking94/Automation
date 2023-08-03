@@ -15,7 +15,7 @@ import stat
 import paramiko
 
 from . import NL, BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config
 from .secrets import keepass
 
 
@@ -93,6 +93,7 @@ class sftp:
 
         TODO
         ----
+        Convert config_path to config_file, and parse it with dirname/basename
         Look into error handling if private key is not an RSA key
 
         """
@@ -274,7 +275,7 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
+            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
 
         # validate local_files and make sure its the proper data type
         remote_files = [remote_files] if isinstance(remote_files, str) else remote_files  # convert single files to a list
@@ -304,7 +305,8 @@ class sftp:
             for ctr, f in enumerate(download_files):
                 remote_file = os.path.join(remote_dir, f).replace('\\', '/')
                 local_file = os.path.join(local_dir, f)
-                local_file_archive = os.path.join(local_dir, 'Archive', f)
+                archive_dir_name = get_config('archiveDirName')
+                local_file_archive = os.path.join(local_dir, archive_dir_name, f)
                 if not os.path.isfile(local_file):
                     if not os.path.isfile(local_file_archive):
                         ftp.get(remote_file, local_file)
@@ -353,7 +355,7 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
+            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
 
         # validate local_files and make sure its the proper data type
         local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
@@ -381,7 +383,8 @@ class sftp:
 
         tot_ct = len(upload_files)
         if tot_ct > 0:
-            local_dir_archive = os.path.join(local_dir, 'Archive')
+            archive_dir_name = get_config('archiveDirName')
+            local_dir_archive = os.path.join(local_dir, archive_dir_name)
             self._connectssh()
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)

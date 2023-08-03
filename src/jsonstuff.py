@@ -6,8 +6,8 @@ Creation Date: 2023-06-17
 """
 
 import fnmatch
-import os
 import json
+import os
 
 
 def reformat_json(path: str, files: list | str = None) -> list:

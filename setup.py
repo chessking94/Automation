@@ -7,6 +7,7 @@ setup(
     name=src.__name__,
     version=src.__version__,
     author=src.__author__,
+    author_email=src.__email__,
     description=src.__doc__.replace("\n", " ").strip(),
     license='GPL-3.0+',
     url='https://github.com/chessking94/Automation',

@@ -7,17 +7,145 @@ Creation Date: 2023-06-18
 
 import csv
 import datetime as dt
+import fnmatch
+import logging
 import os
-import tempfile
 import shutil
+import tempfile
 
-from . import BOOLEANS, NL
-from .misc import get_config as get_config
+from . import BOOLEANS, NL, VALID_DELIMS
+from .misc import get_config
+from .office import convert
 
 
 class fileproc_constants:
     """A class for constants necessary for the fileproc module"""
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
+
+
+class manipulate:
+    """Class for general actions on multiple files or a directory"""
+    def __init__(self):
+        pass
+
+    def mergecsvfiles(self, merge_dir: str, merge_wildcard: str, merge_name: str, header: bool = False, delim: str = None) -> str:
+        """Merge all csv files in a directory
+
+        Parameters
+        ----------
+        merge_dir : str
+            Directory in which files to merge reside in
+        merge_wildcard : str
+            Wildcard file naming convention to use
+        merge_name : str
+            Basename of resulting merged file
+        header : bool, optional (default False)
+            Indicator if files have a header row
+        delim : str, optional (default None)
+            Delimiter of the csv files. Uses method office.convert._guessdelimiter if not provided
+
+        Returns
+        -------
+        str : the full name of the merged files
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'merge_dir' does not exist
+        NotImplementedError
+            If the guessed delimiter in the csv file is not in a predefined list
+
+        TODO
+        ----
+        Rework this to use cmdprompt "copy" when header = False, avoid extra iterations
+        Accept fixed-width files, not just delimited
+
+        """
+        if not os.path.isdir(merge_dir):
+            raise FileNotFoundError(f"merge directory '{merge_dir} does not exist")
+
+        header = header if header in BOOLEANS else False
+
+        merged_file = None
+        merge_list = []
+        source_list = [f for f in os.listdir(merge_dir) if os.path.isfile(os.path.join(merge_dir, f))]
+        for f in source_list:
+            if fnmatch.fnmatch(f, merge_wildcard):
+                merge_list.append(os.path.join(merge_dir, f))
+
+        if len(merge_list) == 0:
+            logging.warning(f"no files '{merge_wildcard}' to merge at '{merge_dir}'")
+        else:
+            # determine delimiter
+            cvrt = convert()
+            first_filename = merge_list[0]
+            delim = cvrt._guessdelimiter(first_filename) if delim is None else delim
+            if delim not in VALID_DELIMS:
+                raise NotImplementedError(f"invalid delimiter: {delim}")
+
+            # get header text if required
+            if header:
+                with open(first_filename, mode='r', newline=NL) as ff:
+                    reader = csv.reader(ff, delimiter=delim, quotechar='"')
+                    hdr_text = next(reader)
+
+            # iterate through and merge files
+            merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
+            with open(merged_file, mode='w', newline='') as mf:
+                writer = csv.writer(mf, delimiter=delim)
+                if header:
+                    writer.writerow(hdr_text)
+
+                for file in merge_list:
+                    with open(file, mode='r', newline=NL) as mff:
+                        reader = csv.reader(mff, delimiter=delim, quotechar='"')
+                        # skip the header row, already written
+                        if header:
+                            next(reader)
+                        for row in reader:
+                            writer.writerow(row)
+
+        return merged_file
+
+    def wildcardcopy(self, source_dir: str, dest_dir: str, file_wildcard: str) -> list:
+        """Copy files using a wilcard from one directory to another
+
+        Parameters
+        ----------
+        source_dir : str
+            Source directory to copy files from
+        dest_dir : str
+            Destination directory to copy files into
+        file_wildcard : str
+            Wildcard file naming convention to use
+
+        Returns
+        -------
+        list : the full name of the files copied
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'source_dir' does not exist
+            If 'dest_dir' does not exist
+
+        """
+        if not os.path.isdir(source_dir):
+            raise FileNotFoundError(f"source directory '{source_dir} does not exist")
+
+        if not os.path.isdir(dest_dir):
+            raise FileNotFoundError(f"destination directory '{dest_dir} does not exist")
+
+        rtn_list = []
+        source_list = [f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))]
+        for f in source_list:
+            if fnmatch.fnmatch(f, file_wildcard):
+                src_name = os.path.join(source_dir, f)
+                dest_name = os.path.join(dest_dir, f)
+                shutil.copy2(src_name, dest_name)
+                rtn_list.append(dest_name)
+
+        return rtn_list
 
 
 class monitoring:
@@ -62,6 +190,10 @@ class monitoring:
             If 'path' does not exist
         RuntimeError
             If 'path' contains 'ref_delim'
+
+        TODO
+        ----
+        Convert config_path to config_file, and parse it with dirname/basename
 
         """
         if config_path and not os.path.isdir(config_path):
