@@ -18,6 +18,16 @@ class TestManipulate(unittest.TestCase):
             if os.path.isfile(f):
                 os.remove(f)
 
+    def test_mergecsvfiles_invalid_dir(self):
+        bad_dir = '/this/path/is/bad'
+        self.assertRaises(FileNotFoundError, self.fp.mergecsvfiles, bad_dir, 'fileproc_test*.txt', True, ',')
+
+    def test_mergecsvfiles(self):
+        merge_name = 'mergedfile.txt'
+        result_file = self.fp.mergecsvfiles(FILE_DIR, 'fileproc_test*.txt', merge_name, True, ',')
+        self.file_list.append(result_file)
+        self.assertEqual(os.path.normpath(result_file), os.path.join(FILE_DIR, merge_name))
+
     def test_wildcardcopy_invalid_src(self):
         bad_src = '/this/path/is/bad'
         self.assertRaises(FileNotFoundError, self.fp.wildcardcopy, bad_src, os.getcwd(), '*.txt')
