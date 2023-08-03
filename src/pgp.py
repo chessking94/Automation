@@ -71,6 +71,10 @@ class pgp:
             If 'public_key' and 'private_key' values are missing
             If 'private_key' is populated but 'passphrase' is missing
 
+        TODO
+        ----
+        Convert config_path to config_file, and parse it with dirname/basename
+
         """
         if config_path and not os.path.isdir(config_path):
             raise FileNotFoundError
@@ -135,7 +139,7 @@ class pgp:
         file_override : list or str, optional (default None)
             File(s) to encrypt. Will encrypt all files in directory if not provided
         archive : bool, optional (default True)
-            Indicator if original file(s) should move to an "Archive" subdirectory after encryption
+            Indicator if original file(s) should move to an config-defeind archive subdirectory after encryption
         write_log : bool, optional (default False)
             Indicator if files encrypted should be written to a log file
 
@@ -208,7 +212,8 @@ class pgp:
                     self._writelog('ENCRYPT', path_override, f, os.path.basename(encrypted_file))
 
                 if archive:
-                    archive_dir = os.path.join(path_override, 'Archive')
+                    archive_dir_name = get_config('archiveDirName')
+                    archive_dir = os.path.join(path_override, archive_dir_name)
                     if os.path.isdir(archive_dir):
                         archive_name = os.path.join(archive_dir, f)
                         os.rename(os.path.join(path_override, f), archive_name)
@@ -225,7 +230,7 @@ class pgp:
         file_override : list or str, optional (default None)
             File(s) to decrypt. Will decrypt all files in directory if not provided
         archive : bool, optional (default True)
-            Indicator if original file(s) should move to an "Archive" subdirectory after decryption
+            Indicator if original file(s) should move to a config-defined archive subdirectory after decryption
         write_log : bool, optional (default False)
             Indicator if files decrypted should be written to a log file
 
@@ -312,7 +317,8 @@ class pgp:
                         self._writelog('DECRYPT', path_override, f, os.path.basename(decrypted_file))
 
                     if archive:
-                        archive_dir = os.path.join(path_override, 'Archive')
+                        archive_dir_name = get_config('archiveDirName')
+                        archive_dir = os.path.join(path_override, archive_dir_name)
                         if os.path.isdir(archive_dir):
                             archive_name = os.path.join(archive_dir, f)
                             os.rename(os.path.join(path_override, f), archive_name)

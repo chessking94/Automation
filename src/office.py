@@ -15,6 +15,7 @@ from win32com import client
 import xlsxwriter as xl
 
 from . import BOOLEANS, VALID_DELIMS
+from .misc import get_config
 
 
 class convert():
@@ -207,8 +208,9 @@ class convert():
                     ws.write(j + 1, i, str(value))
             wb.close()
 
-            if os.path.isdir(os.path.join(path, 'Archive')):
-                os.rename(filename, os.path.join(path, 'Archive', file))
+            archive_dir_name = get_config('archiveDirName')
+            if os.path.isdir(os.path.join(path, archive_dir_name)):
+                os.rename(filename, os.path.join(path, archive_dir_name, file))
 
         return output_file
 
@@ -260,8 +262,9 @@ class convert():
             df = pd.read_excel(filename, engine='openpyxl')
             df.to_csv(output_file, sep=delim, encoding='utf-8', index=False)
 
-            if os.path.isdir(os.path.join(path, 'Archive')):
-                os.rename(filename, os.path.join(path, 'Archive', file))
+            archive_dir_name = get_config('archiveDirName')
+            if os.path.isdir(os.path.join(path, archive_dir_name)):
+                os.rename(filename, os.path.join(path, archive_dir_name, file))
 
         return output_file
 

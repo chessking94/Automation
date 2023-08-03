@@ -4,6 +4,7 @@
 	"logDelimiter": ",",
 	"suppressDelimiter": "|",
 	"db_connectionString": "Driver={ODBC Driver 17 for SQL Server};Server=ServerName;Database=DatabaseName",
-	"fileproc_referenceFile": "CC:/reference/directorymonitoring.csv",
-	"fileproc_referenceDelimiter": ","
+	"fileproc_referenceFile": "C:/reference/directorymonitoring.csv",
+	"fileproc_referenceDelimiter": ",",
+	"archiveDirName": "Archive"
 }

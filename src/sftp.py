@@ -15,7 +15,7 @@ import stat
 import paramiko
 
 from . import NL, BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config
 from .secrets import keepass
 
 
@@ -93,6 +93,7 @@ class sftp:
 
         TODO
         ----
+        Convert config_path to config_file, and parse it with dirname/basename
         Look into error handling if private key is not an RSA key
 
         """
@@ -304,7 +305,8 @@ class sftp:
             for ctr, f in enumerate(download_files):
                 remote_file = os.path.join(remote_dir, f).replace('\\', '/')
                 local_file = os.path.join(local_dir, f)
-                local_file_archive = os.path.join(local_dir, 'Archive', f)
+                archive_dir_name = get_config('archiveDirName')
+                local_file_archive = os.path.join(local_dir, archive_dir_name, f)
                 if not os.path.isfile(local_file):
                     if not os.path.isfile(local_file_archive):
                         ftp.get(remote_file, local_file)
@@ -381,7 +383,8 @@ class sftp:
 
         tot_ct = len(upload_files)
         if tot_ct > 0:
-            local_dir_archive = os.path.join(local_dir, 'Archive')
+            archive_dir_name = get_config('archiveDirName')
+            local_dir_archive = os.path.join(local_dir, archive_dir_name)
             self._connectssh()
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)
