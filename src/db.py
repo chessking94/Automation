@@ -15,7 +15,7 @@ import pandas as pd
 import pyodbc as sql
 
 from . import BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config
 
 
 class db:
@@ -35,6 +35,8 @@ class db:
     TODO
     ----
     Add general query execution stuff, will need injection defenses
+    Rework how connection works, want it to take a custom connection string or key value for config
+    Add ability to not immediately connect or require a connection string to use
 
     """
     def __init__(self, config_path: str = None):
@@ -49,6 +51,10 @@ class db:
         ------
         FileNotFoundError
             If config_path does not exist
+
+        TODO
+        ----
+        Convert config_path to config_file, and parse it with dirname/basename
 
         """
         if not os.path.isdir(config_path):

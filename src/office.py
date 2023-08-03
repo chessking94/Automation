@@ -14,7 +14,7 @@ import pandas as pd
 from win32com import client
 import xlsxwriter as xl
 
-from . import BOOLEANS, VALID_DELIMS
+from . import BOOLEANS, NL, VALID_DELIMS
 from .misc import get_config
 
 
@@ -148,7 +148,7 @@ class convert():
 
         old_delim = self._guessdelimiter(filename) if old_delim is None else old_delim
 
-        with open(filename, mode='r', newline='\n') as inpfile:
+        with open(filename, mode='r', newline=NL) as inpfile:
             reader = csv.reader(inpfile, delimiter=old_delim, quotechar='"')
             with open(output_file, mode='w', newline='') as outfile:
                 writer = csv.writer(outfile, delimiter=new_delim)

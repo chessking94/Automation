@@ -40,6 +40,7 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
 
     TODO
     ----
+    Determine whether path_override and name_override need to be merged
     Generalize so it can accept JSON, YAML, and a two column csv file
 
     """

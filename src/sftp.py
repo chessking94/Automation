@@ -275,7 +275,7 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
+            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
 
         # validate local_files and make sure its the proper data type
         remote_files = [remote_files] if isinstance(remote_files, str) else remote_files  # convert single files to a list
@@ -355,7 +355,7 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} is not exist")
+            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
 
         # validate local_files and make sure its the proper data type
         local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
