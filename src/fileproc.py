@@ -7,17 +7,64 @@ Creation Date: 2023-06-18
 
 import csv
 import datetime as dt
+import fnmatch
 import os
-import tempfile
 import shutil
+import tempfile
 
 from . import BOOLEANS, NL
-from .misc import get_config as get_config
+from .misc import get_config
 
 
 class fileproc_constants:
     """A class for constants necessary for the fileproc module"""
     MODULE_NAME = os.path.splitext(os.path.basename(__file__))[0]
+
+
+class manipulate:
+    """Class for general actions on multiple files or a directory"""
+    def __init__(self):
+        pass
+
+    def wildcardcopy(self, source_dir: str, dest_dir: str, file_wildcard: str) -> list:
+        """Copy files using a wilcard from one directory to another
+
+        Parameters
+        ----------
+        source_dir : str
+            Source directory to copy files from
+        dest_dir : str
+            Destination directory to copy files into
+        file_wildcard : str
+            Wildcard file naming convention to use
+
+        Returns
+        -------
+        list : the full name of the files copied
+
+        Raises
+        ------
+        FileNotFoundError
+            If 'source_dir' does not exist
+            If 'dest_dir' does not exist
+
+        """
+        if not os.path.isdir(source_dir):
+            raise FileNotFoundError(f"source directory '{source_dir} is not exist")
+
+        if not os.path.isdir(dest_dir):
+            raise FileNotFoundError(f"destination directory '{dest_dir} is not exist")
+
+        rtn_list = []
+        source_list = [f for f in os.listdir(source_dir) if os.path.isfile(os.path.join(source_dir, f))]
+        for f in source_list:
+            if fnmatch.fnmatch(f, file_wildcard):
+                src_name = os.path.join(source_dir, f)
+                dest_name = os.path.join(dest_dir, f)
+                shutil.copy2(src_name, dest_name)
+                rtn_list.append(dest_name)
+
+        return rtn_list
 
 
 class monitoring:
@@ -62,6 +109,10 @@ class monitoring:
             If 'path' does not exist
         RuntimeError
             If 'path' contains 'ref_delim'
+
+        TODO
+        ----
+        Convert config_path to config_file, and parse it with dirname/basename
 
         """
         if config_path and not os.path.isdir(config_path):

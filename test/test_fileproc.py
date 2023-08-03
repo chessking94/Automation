@@ -8,6 +8,29 @@ from src.misc import get_config
 FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'fileproc')
 
 
+class TestManipulate(unittest.TestCase):
+    def setUp(self):
+        self.fp = fileproc.manipulate()
+        self.file_list = []
+
+    def tearDown(self):
+        for f in self.file_list:
+            if os.path.isfile(f):
+                os.remove(f)
+
+    def test_wildcardcopy_invalid_src(self):
+        bad_src = '/this/path/is/bad'
+        self.assertRaises(FileNotFoundError, self.fp.wildcardcopy, bad_src, os.getcwd(), '*.txt')
+
+    def test_wildcardcopy_invalid_dest(self):
+        bad_dest = '/this/path/is/bad'
+        self.assertRaises(FileNotFoundError, self.fp.wildcardcopy, os.getcwd(), bad_dest, '*.txt')
+
+    def test_wildcardcopy(self):
+        self.file_list = self.fp.wildcardcopy(FILE_DIR, os.path.dirname(FILE_DIR), '*.txt')
+        self.assertEqual(len(self.file_list), 2)
+
+
 class TestMonitoring(unittest.TestCase):
     def test_monitoring_invalid_path(self):
         self.assertRaises(FileNotFoundError, fileproc.monitoring, '/this/path/is/bad')
@@ -34,8 +57,9 @@ class TestMonitoring(unittest.TestCase):
         dt = '1970-01-01 00:00:00'
         monit.change_time(dt)
         files = monit.modified_files()
-        self.assertEqual(len(files), 1)
+        self.assertEqual(len(files), 2)
         self.assertEqual(files[0], 'fileproc_testfile.txt')
+        self.assertEqual(files[1], 'fileproc_testfile2.txt')
 
 
 if __name__ == '__main__':
