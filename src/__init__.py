@@ -6,7 +6,8 @@ and CSV and Office file conversions.
 
 __name__ = 'automation'
 __author__ = 'Ethan Hunt'
-__version__ = '1.0.3'
+__email__ = 'chessking94@gmail.com'
+__version__ = '1.0.4'
 
 # globals
 NL = '\n'
