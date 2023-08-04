@@ -22,9 +22,15 @@ class TestManipulate(unittest.TestCase):
         bad_dir = '/this/path/is/bad'
         self.assertRaises(FileNotFoundError, self.fp.mergecsvfiles, bad_dir, 'fileproc_test*.txt', True, ',')
 
-    def test_mergecsvfiles(self):
+    def test_mergecsvfiles_withheader(self):
         merge_name = 'mergedfile.txt'
         result_file = self.fp.mergecsvfiles(FILE_DIR, 'fileproc_test*.txt', merge_name, True, ',')
+        self.file_list.append(result_file)
+        self.assertEqual(os.path.normpath(result_file), os.path.join(FILE_DIR, merge_name))
+
+    def test_mergecsvfiles_withoutheader(self):
+        merge_name = 'mergedfile.txt'
+        result_file = self.fp.mergecsvfiles(FILE_DIR, 'fileproc_test*.txt', merge_name, False, ',')
         self.file_list.append(result_file)
         self.assertEqual(os.path.normpath(result_file), os.path.join(FILE_DIR, merge_name))
 

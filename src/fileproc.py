@@ -11,6 +11,7 @@ import fnmatch
 import logging
 import os
 import shutil
+import subprocess
 import tempfile
 
 from . import BOOLEANS, NL, VALID_DELIMS
@@ -57,7 +58,6 @@ class manipulate:
 
         TODO
         ----
-        Rework this to use cmdprompt "copy" when header = False, avoid extra iterations
         Accept fixed-width files, not just delimited
 
         """
@@ -76,34 +76,42 @@ class manipulate:
         if len(merge_list) == 0:
             logging.warning(f"no files '{merge_wildcard}' to merge at '{merge_dir}'")
         else:
-            # determine delimiter
-            cvrt = convert()
-            first_filename = merge_list[0]
-            delim = cvrt._guessdelimiter(first_filename) if delim is None else delim
-            if delim not in VALID_DELIMS:
-                raise NotImplementedError(f"invalid delimiter: {delim}")
-
-            # get header text if required
             if header:
+                # determine delimiter
+                cvrt = convert()
+                first_filename = merge_list[0]
+                delim = cvrt._guessdelimiter(first_filename) if delim is None else delim
+                if delim not in VALID_DELIMS:
+                    raise NotImplementedError(f"invalid delimiter: {delim}")
+
+                # get header text
                 with open(first_filename, mode='r', newline=NL) as ff:
                     reader = csv.reader(ff, delimiter=delim, quotechar='"')
                     hdr_text = next(reader)
 
-            # iterate through and merge files
-            merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
-            with open(merged_file, mode='w', newline='') as mf:
-                writer = csv.writer(mf, delimiter=delim)
-                if header:
+                # iterate through and merge files
+                merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
+                with open(merged_file, mode='w', newline='') as mf:
+                    writer = csv.writer(mf, delimiter=delim)
                     writer.writerow(hdr_text)
 
-                for file in merge_list:
-                    with open(file, mode='r', newline=NL) as mff:
-                        reader = csv.reader(mff, delimiter=delim, quotechar='"')
-                        # skip the header row, already written
-                        if header:
-                            next(reader)
-                        for row in reader:
-                            writer.writerow(row)
+                    for file in merge_list:
+                        with open(file, mode='r', newline=NL) as mff:
+                            reader = csv.reader(mff, delimiter=delim, quotechar='"')
+                            next(reader)  # skip the header row, already written
+                            for row in reader:
+                                writer.writerow(row)
+            else:
+                # we don't care about the header, use the built-in copy method
+                os.chdir(merge_dir)
+                cmd_txt = f'copy /B {merge_wildcard} {merge_name}'
+                result = subprocess.run(cmd_txt, shell=True, capture_output=True, text=True)
+                if result.returncode != 0:
+                    err_msg = f"command '{cmd_txt}' failed"
+                    logging.critical(err_msg)
+                    raise RuntimeError(err_msg)
+                else:
+                    merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
 
         return merged_file
 
