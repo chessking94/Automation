@@ -16,7 +16,6 @@ import tempfile
 
 from . import BOOLEANS, NL, VALID_DELIMS
 from .misc import get_config
-from .office import convert
 
 
 class fileproc_constants:
@@ -43,7 +42,7 @@ class manipulate:
         header : bool, optional (default False)
             Indicator if files have a header row
         delim : str, optional (default None)
-            Delimiter of the csv files. Uses method office.convert._guessdelimiter if not provided
+            Delimiter of the csv files. If none provide, will assume fixed-width file.
 
         Returns
         -------
@@ -55,10 +54,6 @@ class manipulate:
             If 'merge_dir' does not exist
         NotImplementedError
             If the guessed delimiter in the csv file is not in a predefined list
-
-        TODO
-        ----
-        Accept fixed-width files, not just delimited
 
         """
         if not os.path.isdir(merge_dir):
@@ -76,31 +71,39 @@ class manipulate:
         if len(merge_list) == 0:
             logging.warning(f"no files '{merge_wildcard}' to merge at '{merge_dir}'")
         else:
+            merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
             if header:
-                # determine delimiter
-                cvrt = convert()
                 first_filename = merge_list[0]
-                delim = cvrt._guessdelimiter(first_filename) if delim is None else delim
-                if delim not in VALID_DELIMS:
-                    raise NotImplementedError(f"invalid delimiter: {delim}")
+                if delim:
+                    if delim not in VALID_DELIMS:
+                        raise NotImplementedError(f"invalid delimiter: {delim}")
 
-                # get header text
-                with open(first_filename, mode='r', newline=NL) as ff:
-                    reader = csv.reader(ff, delimiter=delim, quotechar='"')
-                    hdr_text = next(reader)
+                    # get header text
+                    with open(first_filename, mode='r', newline=NL) as ff:
+                        reader = csv.reader(ff, delimiter=delim, quotechar='"')
+                        hdr_text = next(reader)
 
-                # iterate through and merge files
-                merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
-                with open(merged_file, mode='w', newline='') as mf:
-                    writer = csv.writer(mf, delimiter=delim)
-                    writer.writerow(hdr_text)
+                    # iterate through and merge files
+                    with open(merged_file, mode='w', newline='') as mf:
+                        writer = csv.writer(mf, delimiter=delim)
+                        writer.writerow(hdr_text)
 
-                    for file in merge_list:
-                        with open(file, mode='r', newline=NL) as mff:
-                            reader = csv.reader(mff, delimiter=delim, quotechar='"')
-                            next(reader)  # skip the header row, already written
-                            for row in reader:
-                                writer.writerow(row)
+                        for file in merge_list:
+                            with open(file, mode='r', newline=NL) as mff:
+                                reader = csv.reader(mff, delimiter=delim, quotechar='"')
+                                next(reader)  # skip the header row, already written
+                                for row in reader:
+                                    writer.writerow(row)
+                else:
+                    # assume fixed-width file
+                    with open(merged_file, mode='w') as mf:
+                        for i, filename in enumerate(merge_list):
+                            with open(filename, mode='r') as mff:
+                                # skip the header for all files except the first one
+                                if i > 0:
+                                    next(mff)
+
+                                mf.write(mff.read())
             else:
                 # we don't care about the header, use the built-in copy method
                 os.chdir(merge_dir)
@@ -110,8 +113,6 @@ class manipulate:
                     err_msg = f"command '{cmd_txt}' failed"
                     logging.critical(err_msg)
                     raise RuntimeError(err_msg)
-                else:
-                    merged_file = os.path.join(merge_dir, os.path.basename(merge_name))
 
         return merged_file
 
