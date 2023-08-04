@@ -137,7 +137,7 @@ class pgp:
         path_override : str, optional (default None)
             Directory to encrypt. Will use self.encrypt_path if not provided
         file_override : list or str, optional (default None)
-            File(s) to encrypt. Will encrypt all files in directory if not provided
+            Specific file(s) or wildcard names to encrypt. Will encrypt all files in directory if not provided
         archive : bool, optional (default True)
             Indicator if original file(s) should move to an config-defeind archive subdirectory after encryption
         write_log : bool, optional (default False)
@@ -228,7 +228,7 @@ class pgp:
         path_override : str, optional (default None)
             Directory to decrypt. Will use self.decrypt_path if not provided
         file_override : list or str, optional (default None)
-            File(s) to decrypt. Will decrypt all files in directory if not provided
+            Specific file(s) or wildcard names to decrypt. Will decrypt all files in directory if not provided
         archive : bool, optional (default True)
             Indicator if original file(s) should move to a config-defined archive subdirectory after decryption
         write_log : bool, optional (default False)
