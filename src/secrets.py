@@ -8,6 +8,30 @@ Creation Date: 2023-07-04
 from pykeepass import PyKeePass, pykeepass as pk
 
 
+class secrets_constants():
+    """A class for constants necessary for the secrets module"""
+    PGP_PROPERTIES = [
+        'DecryptPathDefault',
+        'EncryptedExtension',
+        'EncryptPathDefault',
+        'SuppressDecryptDefault',
+        'SuppressEncryptDefault'
+    ]
+    SFTP_PROPERTIES = [
+        'HostKeyType',
+        'HostKeyValue',
+        'LocalInDefault',
+        'LocalOutDefault',
+        'LoginType',
+        'Passphrase',
+        'Port',
+        'RemoteInDefault',
+        'RemoteOutDefault',
+        'SuppressInDefault',
+        'SuppressOutDefault'
+    ]
+
+
 class keepass():
     """Class to interact with a Keepass file where secrets are saved
 
@@ -24,7 +48,6 @@ class keepass():
 
     TODO
     ----
-    Consider adding write functionality to Keepass DB, intentionally only implementing read at first
     Implement keyfile opening of Keepass file
 
     """
@@ -99,10 +122,6 @@ class keepass():
         NotImplementedError
             If 'field' is not an expected value
 
-        TODO
-        ----
-        Investigate if there is a more flexible way to perform validation on 'field'
-
         """
         field = field.lower()
         field_list = ['username', 'password', 'url']
@@ -128,34 +147,14 @@ class keepass():
         NotImplementedError
             If string_field is not an expected value for that Keepass group
 
-        TODO
-        ----
-        Investigate if there is a more flexible way to perform validation on 'property_list'
-
         """
         property_list = []
         if self.group_title == 'test':
             property_list = ['Test']
         elif self.group_title == 'pgp':
-            property_list = [
-                'DecryptPathDefault',
-                'EncryptedExtension',
-                'EncryptPathDefault',
-                'SuppressDecryptDefault',
-                'SuppressEncryptDefault'
-            ]
+            property_list = secrets_constants.PGP_PROPERTIES
         elif self.group_title == 'sftp':
-            property_list = [
-                'LocalInDefault',
-                'LocalOutDefault',
-                'LoginType',
-                'Passphrase',
-                'Port',
-                'RemoteInDefault',
-                'RemoteOutDefault',
-                'SuppressInDefault',
-                'SuppressOutDefault'
-            ]
+            property_list = secrets_constants.SFTP_PROPERTIES
 
         if len(property_list) > 0:
             if string_field not in property_list:
@@ -192,3 +191,27 @@ class keepass():
             raise IndexError(f'attachment {attachment_name} does not exist')
 
         return data
+
+    def writecustomproperty(self, string_field: str, new_value: str, create_property: bool = False):
+        """Writes custom property value
+
+        Parameters
+        ----------
+        string_field : str
+            The name of the custom field to write to
+        new_value : str
+            The value to write to the custom field
+        create_property : bool, optional (default False)
+            Indicator if the custom field should be created, if it does not exist
+
+        Raises
+        ------
+        KeyError
+            If custom property 'string_field' does not exist and 'create_property' is False
+
+        """
+        if string_field in self.entry.custom_properties or create_property:
+            self.entry.set_custom_property(key=string_field, value=new_value)
+        else:
+            raise KeyError(f"keepass entry '{self.entry.title}' custom property '{string_field}' does not exist")
+        self.kp.save()
