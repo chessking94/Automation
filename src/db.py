@@ -15,7 +15,6 @@ import pandas as pd
 import pyodbc as sql
 
 from . import BOOLEANS
-from .misc import get_config
 
 
 class db:
@@ -35,48 +34,40 @@ class db:
     TODO
     ----
     Add general query execution stuff, will need injection defenses
-    Rework how connection works, want it to take a custom connection string or key value for config
-    Add ability to not immediately connect or require a connection string to use
 
     """
-    def __init__(self, config_path: str = None):
+    def __init__(self, connection_string: str = None):
         """Inits db class
 
         Parameters
         ----------
-        config_path : str, optional (default None)
-            Directory in which the library configuration file resides.
-
-        Raises
-        ------
-        FileNotFoundError
-            If config_path does not exist
-
-        TODO
-        ----
-        Convert config_path to config_file, and parse it with dirname/basename
+        connection_string : str, optional (default None)
+            Connection string of the database to connect to. Will skip connection if not provided.
 
         """
-        if not os.path.isdir(config_path):
-            raise FileNotFoundError
-
-        self.conn = sql.connect(get_config('db_connectionString', config_path))
+        self.conn = None
+        if connection_string:
+            self.conn = sql.connect(connection_string)
 
     def close(self):
         """Closes a db object"""
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
+        else:
+            raise UnboundLocalError('connection does not exist to close')
 
-    def __enter__(self, config_path: str = None):
+    def __enter__(self, connection_string: str = None):
         """Opens a db object from a context manager"""
-        if config_path and not os.path.isdir(config_path):
-            raise FileNotFoundError
+        self.conn = None
+        if connection_string:
+            self.conn = sql.connect(connection_string)
 
-        self.conn = sql.connect(get_config('db_connectionString', config_path))
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         """Closes a db object opened with a context manager"""
-        self.conn.close()
+        if self.conn:
+            self.conn.close()
 
     def _is_job_running(self, job_name: str) -> bool:
         """Determines if a SQL Server job is still running
@@ -90,7 +81,15 @@ class db:
         -------
         bool : Whether or not the job is running
 
+        Raises
+        ------
+        TypeError
+            If no connection exists
+
         """
+        if not self.conn:
+            raise TypeError('connection does not exist')
+
         qry_text = f"""
 SELECT
 CASE WHEN act.stop_execution_date IS NULL THEN 1 ELSE 0 END AS is_running
@@ -128,7 +127,15 @@ WHERE job.name = '{job_name}'
         -------
         bool : Whether the job is still running at the time the script ends
 
+        Raises
+        ------
+        TypeError
+            If no connection exists
+
         """
+        if not self.conn:
+            raise TypeError('connection does not exist')
+
         wait_for_completion = wait_for_completion if wait_for_completion in BOOLEANS else False
         csr = self.conn.cursor()
         csr.execute(f"EXEC msdb.dbo.sp_start_job @job_name = '{job_name}'")

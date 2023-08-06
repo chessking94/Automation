@@ -5,6 +5,7 @@ Creation Date: 2023-06-13
 
 """
 
+import base64
 import datetime as dt
 import fnmatch
 import io
@@ -89,7 +90,7 @@ class sftp:
             If 'host' is missing
             If 'username' is missing
             If 'pwd' and 'private_key' are missing
-            If 'login_type' is Key but 'private_key' is missing
+            If 'login_type' = "Key" but 'private_key' is missing
 
         TODO
         ----
@@ -98,44 +99,47 @@ class sftp:
 
         """
         if config_path and not os.path.isdir(config_path):
+            logging.critical('config_path does not exist')
             raise FileNotFoundError
 
-        kp = keepass(
+        self.kp = keepass(
             filename=get_config('keepassFile', config_path),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=sftp_constants.MODULE_NAME,
             entry_title=profile_name
         )
         self.name = profile_name
-        self.login_type = kp.getcustomproperties('LoginType').strip().upper()
+        self.login_type = self.kp.getcustomproperties('LoginType').strip().upper()
         self.login_type = 'KEY' if 'KEY' in self.login_type else 'NORMAL'  # consider it a key file if string contains 'key'
-        self.host = kp.getgeneral('url')
-        self.port = kp.getcustomproperties('Port')
+        self.host = self.kp.getgeneral('url')
+        self.host_key_type = self.kp.getcustomproperties('HostKeyType')
+        self.host_key_value = self.kp.getcustomproperties('HostKeyValue')
+        self.port = self.kp.getcustomproperties('Port')
         try:
             self.port = int(self.port)
         except ValueError:
             self.port = 22
-        self.usr = kp.getgeneral('Username')
-        self.pwd = kp.getgeneral('Password')
-        self.passphrase = kp.getcustomproperties('Passphrase')
-        self.private_key = kp.readattachment('OPENSSH_PRIVATE.asc')
+        self.usr = self.kp.getgeneral('Username')
+        self.pwd = self.kp.getgeneral('Password')
+        self.passphrase = self.kp.getcustomproperties('Passphrase')
+        self.private_key = self.kp.readattachment('OPENSSH_PRIVATE.asc')
         if self.private_key:
             self.private_key = io.StringIO(self.private_key)
             self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)
 
         root = '/'
-        self.remote_in = kp.getcustomproperties('RemoteInDefault')
+        self.remote_in = self.kp.getcustomproperties('RemoteInDefault')
         self.remote_in = root if not self.remote_in else self.remote_in
-        self.remote_out = kp.getcustomproperties('RemoteOutDefault')
+        self.remote_out = self.kp.getcustomproperties('RemoteOutDefault')
         self.remote_out = root if not self.remote_out else self.remote_out
-        self.local_in = kp.getcustomproperties('LocalInDefault')
-        self.local_out = kp.getcustomproperties('LocalOutDefault')
+        self.local_in = self.kp.getcustomproperties('LocalInDefault')
+        self.local_out = self.kp.getcustomproperties('LocalOutDefault')
 
         suppress_delimiter = get_config('suppressDelimiter', config_path)
-        self.suppress_in = kp.getcustomproperties('SuppressInDefault')
+        self.suppress_in = self.kp.getcustomproperties('SuppressInDefault')
         self.suppress_in = '' if self.suppress_in is None else self.suppress_in.strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
-        self.suppress_out = kp.getcustomproperties('SuppressOutDefault')
+        self.suppress_out = self.kp.getcustomproperties('SuppressOutDefault')
         self.suppress_out = '' if self.suppress_out is None else self.suppress_out.strip(f"'{suppress_delimiter} '")
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
@@ -151,6 +155,8 @@ class sftp:
         err_text = None
         if not self.host:
             err_text = f"missing host for profile '{self.name}'"
+        if not self.host_key_type or not self.host_key_value:
+            err_text = f"missing host key type and/or value for profile '{self.name}'"
         if not self.usr:
             err_text = f"missing username for profile '{self.name}'"
         if not self.pwd and not self.private_key:
@@ -159,10 +165,16 @@ class sftp:
             err_text = f"missing key file for profile '{self.name}'"
 
         if err_text is not None:
+            logging.critical(err_text)
             raise ValueError(err_text)
 
-    def _connectssh(self):
+    def _connectssh(self, save_host_key: bool = False):
         """Connects to the ssh
+
+        Parameters
+        ----------
+        save_host_key : bool, optional (default False)
+            Whether or not to save the host key information
 
         Raises
         ------
@@ -173,15 +185,13 @@ class sftp:
         Exception
             Anything else that might pop up
 
-        TODO
-        ----
-        Correct connection mechanism, since AutoAddPolicy is vulnerable to MITM attacks
-            Have been hesitent to fix this since it likely will require a manual change for new connections and non-Python peeps won't know how
-            https://stackoverflow.com/questions/10670217/paramiko-unknown-server
-
         """
         self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        if save_host_key:
+            self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        else:
+            host_key = paramiko.pkey.PKey.from_type_string(self.host_key_type, base64.b64decode(self.host_key_value))
+            self.ssh.get_host_keys().add(self.host, self.host_key_type, host_key)
         try:
             if self.login_type == 'NORMAL':
                 self.ssh.connect(
@@ -200,11 +210,18 @@ class sftp:
                     passphrase=self.passphrase
                 )
         except paramiko.AuthenticationException as e:
+            logging.critical(paramiko.AuthenticationException(self.host))
             raise paramiko.AuthenticationException(self.host) from e
         except paramiko.SSHException as e:
+            logging.critical(paramiko.SSHException(f'{e}|{self.host}'))
             raise paramiko.SSHException(f'{e}|{self.host}') from e
         except Exception as e:
+            logging.critical(f'Unhandled exception {e}|{self.host}')
             raise Exception(f'Unhandled exception {e}|{self.host}') from e
+
+        if save_host_key:
+            self.kp.writecustomproperty(string_field='HostKeyType', new_value=host_key.get_name(), create_property=True)
+            self.kp.writecustomproperty(string_field='HostKeyValue', new_value=host_key.get_base64(), create_property=True)
 
     def _writelog(self, direction: str, remote_dir: str, local_dir: str, filename: str):
         """Class function to write to a log file"""
@@ -275,14 +292,16 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
+            err_msg = f"local directory '{local_dir} does not exist"
+            logging.critical(err_msg)
+            raise FileNotFoundError(err_msg)
 
         # validate local_files and make sure its the proper data type
         remote_files = [remote_files] if isinstance(remote_files, str) else remote_files  # convert single files to a list
         remote_files = remote_files if isinstance(remote_files, list) else []  # convert to empty list if not already a list type
 
         success_list = []
-        self._connectssh()
+        self._connectssh(save_host_key=False)
         with self.ssh.open_sftp() as ftp:
             ftp.chdir(remote_dir)
             dir_list = ftp.listdir_attr(remote_dir)
@@ -355,7 +374,9 @@ class sftp:
         write_log = write_log if write_log in BOOLEANS else False
 
         if not os.path.isdir(local_dir):
-            raise FileNotFoundError(f"local directory '{local_dir} does not exist")
+            err_msg = f"local directory '{local_dir} does not exist"
+            logging.critical(err_msg)
+            raise FileNotFoundError(err_msg)
 
         # validate local_files and make sure its the proper data type
         local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
@@ -385,7 +406,7 @@ class sftp:
         if tot_ct > 0:
             archive_dir_name = get_config('archiveDirName')
             local_dir_archive = os.path.join(local_dir, archive_dir_name)
-            self._connectssh()
+            self._connectssh(save_host_key=False)
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)
                 for ctr, f in enumerate(upload_files):
