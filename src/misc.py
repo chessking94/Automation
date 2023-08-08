@@ -1,29 +1,21 @@
-"""misc
-
-Author: Ethan Hunt
-Creation Date: 2023-06-13
-
-"""
-
 from collections import defaultdict
 import csv
 import json
 import os
+import yaml
 
 from . import VALID_DELIMS
 
 
-def get_config(key: str, path_override: str = None, name_override: str = 'config.json') -> str:
+def get_config(key: str, config_file: str = None) -> str:
     """Return a key value from the library configuration file
 
     Parameters
     ----------
     key : str
         Name of key to use
-    path_override : str, optional (default None)
-        Custom location of configuration file, will use the parent directory of this file if not provided
-    name_override : str, optional (default "config.json")
-        Name of configuration file
+    config_file : str, optional (default None)
+        Custom full path of a configuration file, will use the environment variable CONFIGFILE if not provided
 
     Returns
     -------
@@ -32,41 +24,31 @@ def get_config(key: str, path_override: str = None, name_override: str = 'config
     Raises
     ------
     RuntimeError
-        If no 'path_override' is provided and environment variable "CONFIGPATH" does not exist
+        If no 'config_file' is provided and environment variable "CONFIGFILE" does not exist
     FileNotFoundError
-        If 'path_override' directory does not exist
-        If 'name_override' file does not exist
-
-
-    TODO
-    ----
-    Determine whether path_override and name_override need to be merged
-    Generalize so it can accept JSON, YAML, and a two column csv file
+        If 'config_file' file does not exist
 
     """
-    if path_override is None:
-        if os.getenv('CONFIGPATH') is not None:
-            config_path = os.getenv('CONFIGPATH')
+    if config_file is None:
+        if os.getenv('CONFIGFILE') is not None:
+            config_file = os.getenv('CONFIGFILE')
         else:
-            raise RuntimeError('unable to determine config path')
-    else:
-        config_path = path_override
+            raise RuntimeError('unable to determine config file')
 
-    if name_override is None:
-        config_name = 'config.json'
-    else:
-        config_name = name_override
-
-    if not os.path.isdir(config_path):
-        raise FileNotFoundError(f"path '{config_path}' does not exist")
-
-    config_file = os.path.join(config_path, config_name)
     if not os.path.isfile(config_file):
         raise FileNotFoundError(f"config file '{config_file}' does not exist")
 
+    config_type = os.path.splitext(config_file)[1].lower().replace('.', '')
+    if config_type not in ['json', 'yaml']:
+        raise NotImplementedError(f"config file '{os.path.basename(config_file)}' not supported")
+
     with open(config_file, 'r') as cf:
-        key_data = json.load(cf)
-    val = key_data.get(key)
+        if config_type == 'json':
+            key_data = json.load(cf)
+        elif config_type == 'yaml':
+            key_data = yaml.safe_load(cf)
+        val = key_data.get(key)
+
     return val
 
 

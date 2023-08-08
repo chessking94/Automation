@@ -1,10 +1,3 @@
-"""jsonstuff
-
-Author: Ethan Hunt
-Creation Date: 2023-06-17
-
-"""
-
 import fnmatch
 import json
 import os

@@ -52,7 +52,7 @@ class TestMonitoring(unittest.TestCase):
         self.assertRaises(FileNotFoundError, fileproc.monitoring, '/this/path/is/bad')
 
     def test_monitoring_invalid_path_character(self):
-        refdelim = get_config('fileproc_referenceDelimiter')
+        refdelim = get_config('fileproc_referenceDelimiter', os.getenv('CONFIGFILE'))
         test_path = os.path.join(FILE_DIR, f'te{refdelim}st')
         go = True
         try:

@@ -1,10 +1,3 @@
-"""sftp
-
-Author: Ethan Hunt
-Creation Date: 2023-06-13
-
-"""
-
 import base64
 import datetime as dt
 import fnmatch
@@ -30,6 +23,8 @@ class sftp:
 
     Attributes
     ----------
+    config_file : str
+        Full path location of library configuration file
     name : str
         Name of the SFTP profile to connect to
     login_type : str
@@ -70,7 +65,7 @@ class sftp:
         Indicator whether to print progress messages to stdout every 100 files processed
 
     """
-    def __init__(self, profile_name: str, track_progress: bool = True, config_path: str = None):
+    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None):
         """Inits sftp class
 
         Parameters
@@ -79,13 +74,11 @@ class sftp:
             Name of SFTP profile
         track_progress: bool, optional (default True)
             Inidicator if progress should be printed to stdout
-        config_path : str, optional (default None)
-            Location of library configuration file
+        config_file : str, optional (default None)
+            Full path location of library configuration file
 
         Raises
         ------
-        FileNotFoundError
-            If 'config_path' does not exist
         ValueError
             If 'host' is missing
             If 'username' is missing
@@ -94,16 +87,12 @@ class sftp:
 
         TODO
         ----
-        Convert config_path to config_file, and parse it with dirname/basename
         Look into error handling if private key is not an RSA key
 
         """
-        if config_path and not os.path.isdir(config_path):
-            logging.critical('config_path does not exist')
-            raise FileNotFoundError
-
+        self.config_file = config_file
         self.kp = keepass(
-            filename=get_config('keepassFile', config_path),
+            filename=get_config('keepassFile', self.config_file),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=sftp_constants.MODULE_NAME,
             entry_title=profile_name
@@ -135,7 +124,7 @@ class sftp:
         self.local_in = self.kp.getcustomproperties('LocalInDefault')
         self.local_out = self.kp.getcustomproperties('LocalOutDefault')
 
-        suppress_delimiter = get_config('suppressDelimiter', config_path)
+        suppress_delimiter = get_config('suppressDelimiter', self.config_file)
         self.suppress_in = self.kp.getcustomproperties('SuppressInDefault')
         self.suppress_in = '' if self.suppress_in is None else self.suppress_in.strip(f"'{suppress_delimiter} '")
         self.suppress_in = self.suppress_in.split(suppress_delimiter)
@@ -144,9 +133,9 @@ class sftp:
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
         self.ssh = None
-        self.log_path = os.path.join(get_config('logRoot', config_path), sftp_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config('logRoot', self.config_file), sftp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
-        self.log_delim = get_config('logDelimiter', config_path)
+        self.log_delim = get_config('logDelimiter', self.config_file)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
         self._validate_profile()
@@ -324,7 +313,7 @@ class sftp:
             for ctr, f in enumerate(download_files):
                 remote_file = os.path.join(remote_dir, f).replace('\\', '/')
                 local_file = os.path.join(local_dir, f)
-                archive_dir_name = get_config('archiveDirName')
+                archive_dir_name = get_config('archiveDirName', self.config_file)
                 local_file_archive = os.path.join(local_dir, archive_dir_name, f)
                 if not os.path.isfile(local_file):
                     if not os.path.isfile(local_file_archive):
@@ -404,7 +393,7 @@ class sftp:
 
         tot_ct = len(upload_files)
         if tot_ct > 0:
-            archive_dir_name = get_config('archiveDirName')
+            archive_dir_name = get_config('archiveDirName', self.config_file)
             local_dir_archive = os.path.join(local_dir, archive_dir_name)
             self._connectssh(save_host_key=False)
             with self.ssh.open_sftp() as ftp:

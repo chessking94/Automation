@@ -1,10 +1,3 @@
-"""pgp
-
-Author: Ethan Hunt
-Creation Date: 2023-06-14
-
-"""
-
 import datetime as dt
 import fnmatch
 import logging
@@ -13,7 +6,7 @@ import os
 import pgpy
 
 from . import NL, BOOLEANS
-from .misc import get_config as get_config
+from .misc import get_config
 from .secrets import keepass
 
 
@@ -27,6 +20,8 @@ class pgp:
 
     Attributes
     ----------
+    config_file : str
+        Full path location of library configuration file
     name : str
         Name of the PGP profile to use
     extension : str
@@ -53,34 +48,26 @@ class pgp:
         Delimiter to use in the log file, defined in the configuration file
 
     """
-    def __init__(self, profile_name: str, config_path: str = None):
+    def __init__(self, profile_name: str, config_file: str = None):
         """Inits pgp class
 
         Parameters
         ----------
         profile_name : str
             Name of PGP profile
-        config_path : str, optional (default None)
-            Location of library configuration file
+        config_file : str, optional (default None)
+            Full path location of library configuration file
 
         Raises
         ------
-        FileNotFoundError
-            If 'config_path' does not exist
         RuntimeError
             If 'public_key' and 'private_key' values are missing
             If 'private_key' is populated but 'passphrase' is missing
 
-        TODO
-        ----
-        Convert config_path to config_file, and parse it with dirname/basename
-
         """
-        if config_path and not os.path.isdir(config_path):
-            raise FileNotFoundError
-
+        self.config_file = config_file
         kp = keepass(
-            filename=get_config('keepassFile', config_path),
+            filename=get_config('keepassFile', self.config_file),
             password=os.getenv('AUTOMATIONPASSWORD'),
             group_title=pgp_constants.MODULE_NAME,
             entry_title=profile_name
@@ -90,7 +77,7 @@ class pgp:
         self.encrypt_path = kp.getcustomproperties('EncryptPathDefault')
         self.decrypt_path = kp.getcustomproperties('DecryptPathDefault')
 
-        suppress_delimiter = get_config('suppressDelimiter', config_path)
+        suppress_delimiter = get_config('suppressDelimiter', self.config_file)
         self.suppress_encrypt = kp.getcustomproperties('SuppressEncryptDefault')
         self.suppress_encrypt = '' if self.suppress_encrypt is None else self.suppress_encrypt.strip(f"'{suppress_delimiter} '")
         self.suppress_encrypt = self.suppress_encrypt.split(suppress_delimiter)
@@ -103,9 +90,9 @@ class pgp:
         self.private_key = kp.readattachment('PRIVATE.asc')
         self.passphrase = kp.getgeneral('Password')
 
-        self.log_path = os.path.join(get_config('logRoot', config_path), pgp_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config('logRoot', self.config_file), pgp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
-        self.log_delim = get_config('logDelimiter', config_path)
+        self.log_delim = get_config('logDelimiter', self.config_file)
 
         self._validate_profile()
 
@@ -212,7 +199,7 @@ class pgp:
                     self._writelog('ENCRYPT', path_override, f, os.path.basename(encrypted_file))
 
                 if archive:
-                    archive_dir_name = get_config('archiveDirName')
+                    archive_dir_name = get_config('archiveDirName', self.config_file)
                     archive_dir = os.path.join(path_override, archive_dir_name)
                     if os.path.isdir(archive_dir):
                         archive_name = os.path.join(archive_dir, f)
@@ -317,7 +304,7 @@ class pgp:
                         self._writelog('DECRYPT', path_override, f, os.path.basename(decrypted_file))
 
                     if archive:
-                        archive_dir_name = get_config('archiveDirName')
+                        archive_dir_name = get_config('archiveDirName', self.config_file)
                         archive_dir = os.path.join(path_override, archive_dir_name)
                         if os.path.isdir(archive_dir):
                             archive_name = os.path.join(archive_dir, f)

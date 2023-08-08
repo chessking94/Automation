@@ -1,10 +1,3 @@
-"""secrets
-
-Author: Ethan Hunt
-Creation Date: 2023-07-04
-
-"""
-
 from pykeepass import PyKeePass, pykeepass as pk
 
 

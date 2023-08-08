@@ -1,10 +1,3 @@
-"""fileproc
-
-Author: Ethan Hunt
-Creation Date: 2023-06-18
-
-"""
-
 import csv
 import datetime as dt
 import fnmatch
@@ -24,9 +17,16 @@ class fileproc_constants:
 
 
 class manipulate:
-    """Class for general actions on multiple files or a directory"""
-    def __init__(self):
-        pass
+    """Class for general actions on multiple files or a directory
+
+    Attributes
+    ----------
+    config_file : str
+        Full path location of library configuration file
+
+    """
+    def __init__(self, config_file: str = None):
+        self.config_file = config_file
 
     def mergecsvfiles(self, merge_dir: str, merge_wildcard: str, merge_name: str, header: bool = False, delim: str = None) -> str:
         """Merge all csv files in a directory
@@ -164,8 +164,8 @@ class monitoring:
     ----------
     path : str
         Directory to monitor
-    config_path : str
-        Location of library configuration file
+    config_file : str
+        Full path location of library configuration file
     error : str
         Text of validation error
     last_review_time : str
@@ -182,43 +182,39 @@ class monitoring:
         Delimiter to use in the reference file logging the last datetime of monitoring review, defined in the configuration file
 
     """
-    def __init__(self, path: str, config_path: str = None):
+    def __init__(self, path: str, config_file: str = None):
         """Inits monitoring class
 
         Parameters
         ----------
         path : str
             Directory to monitor
-        config_path : str, optional (default None)
-            Location of library configuration file
+        config_file : str, optional (default None)
+            Full path location of library configuration file
 
         Raises
         ------
         FileNotFoundError
-            If 'config_path' does not exist
+            If 'config_file' does not exist
             If 'path' does not exist
         RuntimeError
             If 'path' contains 'ref_delim'
 
-        TODO
-        ----
-        Convert config_path to config_file, and parse it with dirname/basename
-
         """
-        if config_path and not os.path.isdir(config_path):
+        if config_file and not os.path.isdir(config_file):
             raise FileNotFoundError
 
         self.path = path
-        self.config_path = config_path
+        self.config_file = config_file
         self.error = None
         self.last_review_time = self._processtime(readwrite='r')
         self.manual_review = False
 
-        self.log_path = os.path.join(get_config('logRoot', config_path), fileproc_constants.MODULE_NAME)
+        self.log_path = os.path.join(get_config('logRoot', config_file), fileproc_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
 
-        self.log_delim = get_config('logDelimiter', config_path)
-        self.ref_delim = get_config('fileproc_referenceDelimiter', config_path)
+        self.log_delim = get_config('logDelimiter', config_file)
+        self.ref_delim = get_config('fileproc_referenceDelimiter', config_file)
 
         self._validate()
 
@@ -272,7 +268,7 @@ class monitoring:
         # create reference file if it does not exist
         key_column = 'Path'
         dt_column = 'LastMonitorTime'
-        reference_file = get_config('fileproc_referenceFile', self.config_path)
+        reference_file = get_config('fileproc_referenceFile', self.config_file)
         if not os.path.isfile(reference_file):
             header_row = f'{key_column}{self.ref_delim}{dt_column}{NL}'
             with open(file=reference_file, mode='w', encoding='utf-8') as f:

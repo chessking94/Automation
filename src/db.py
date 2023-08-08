@@ -1,10 +1,3 @@
-"""db
-
-Author: Ethan Hunt
-Creation Date: 2023-06-17
-
-"""
-
 import logging
 import os
 import shutil

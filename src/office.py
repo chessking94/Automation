@@ -1,10 +1,3 @@
-"""office
-
-Author: Ethan Hunt
-Creation Date: 2023-06-20
-
-"""
-
 import csv
 import datetime as dt
 import logging
@@ -19,9 +12,16 @@ from .misc import get_config
 
 
 class convert():
-    """Class to perform common file conversions"""
-    def __init__(self):
-        pass
+    """Class to perform common file conversions
+
+    Attributes
+    ----------
+    config_file : str
+        Full path location of library configuration file
+
+    """
+    def __init__(self, config_file: str = None):
+        self.config_file = config_file
 
     def _guessdelimiter(self, filename: str) -> str:
         """Class function to guess the delimiter in a csv file"""
@@ -208,7 +208,7 @@ class convert():
                     ws.write(j + 1, i, str(value))
             wb.close()
 
-            archive_dir_name = get_config('archiveDirName')
+            archive_dir_name = get_config('archiveDirName', self.config_file)
             if os.path.isdir(os.path.join(path, archive_dir_name)):
                 os.rename(filename, os.path.join(path, archive_dir_name, file))
 
@@ -262,7 +262,7 @@ class convert():
             df = pd.read_excel(filename, engine='openpyxl')
             df.to_csv(output_file, sep=delim, encoding='utf-8', index=False)
 
-            archive_dir_name = get_config('archiveDirName')
+            archive_dir_name = get_config('archiveDirName', self.config_file)
             if os.path.isdir(os.path.join(path, archive_dir_name)):
                 os.rename(filename, os.path.join(path, archive_dir_name, file))
 
@@ -311,9 +311,16 @@ class convert():
 
 
 class excel():
-    """Class for often-used Excel functionality"""
-    def __init__(self):
-        pass
+    """Class for often-used Excel functionality
+
+    Attributes
+    ----------
+    config_file : str
+        Full path location of library configuration file
+
+    """
+    def __init__(self, config_file: str = None):
+        self.config_file = config_file
 
     def refresh_file(self, filename: str, save_copy: bool = True) -> str:
         """Refresh all data connections
