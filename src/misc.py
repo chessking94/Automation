@@ -1,7 +1,9 @@
 from collections import defaultdict
 import csv
 import json
+import logging
 import os
+import traceback
 import yaml
 
 from . import VALID_DELIMS
@@ -97,3 +99,24 @@ def csv_to_json(csvfile: str, delimiter: str = ',') -> dict:
             nested_dict[key] = inner_dict
 
     return nested_dict
+
+
+def log_exception(exctype, value, tb):
+    """Log exception by using the root logger
+
+    Taken from https://stackoverflow.com/a/48643567
+
+    Parameters
+    ----------
+    exctype : exception_type
+    value : NameError
+    tb : traceback
+
+    """
+
+    write_val = {
+        'type': str(exctype),
+        'description': str(value),
+        'traceback': str(traceback.format_tb(tb, 10))
+    }
+    logging.critical(str(write_val))

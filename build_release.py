@@ -8,6 +8,7 @@ import sys
 
 from src import __name__ as nm
 from src import __version__ as vrs
+from src.misc import log_exception
 
 ROOT_DIR = os.path.dirname(__file__)
 
@@ -65,6 +66,7 @@ def update_requirements():
 
 
 def main():
+    sys.excepthook = log_exception
     log_path = os.path.join(ROOT_DIR, 'logs')
     if not os.path.isdir(log_path):
         os.mkdir(log_path)
