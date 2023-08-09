@@ -22,6 +22,7 @@ setup(
         'pykeepass==4.0.5',
         'pyodbc==4.0.39',
         'pywin32==306',
+        'PyYAML==6.0.1',
         'XlsxWriter==3.1.2'
     ]
 )

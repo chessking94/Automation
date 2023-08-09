@@ -144,8 +144,8 @@ class sftp:
         err_text = None
         if not self.host:
             err_text = f"missing host for profile '{self.name}'"
-        if not self.host_key_type or not self.host_key_value:
-            err_text = f"missing host key type and/or value for profile '{self.name}'"
+        # if not self.host_key_type or not self.host_key_value:
+        #     err_text = f"missing host key type and/or value for profile '{self.name}'"
         if not self.usr:
             err_text = f"missing username for profile '{self.name}'"
         if not self.pwd and not self.private_key:
@@ -209,6 +209,7 @@ class sftp:
             raise Exception(f'Unhandled exception {e}|{self.host}') from e
 
         if save_host_key:
+            host_key = self.ssh.get_transport().get_remote_server_key()
             self.kp.writecustomproperty(string_field='HostKeyType', new_value=host_key.get_name(), create_property=True)
             self.kp.writecustomproperty(string_field='HostKeyValue', new_value=host_key.get_base64(), create_property=True)
 
