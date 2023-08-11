@@ -65,7 +65,7 @@ class sftp:
         Indicator whether to print progress messages to stdout every 100 files processed
 
     """
-    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None):
+    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None, connect_insecure: bool = False):
         """Inits sftp class
 
         Parameters
@@ -76,6 +76,8 @@ class sftp:
             Inidicator if progress should be printed to stdout
         config_file : str, optional (default None)
             Full path location of library configuration file
+        connect_insecure : bool, optional (default False)
+            Whether to bypass host key verification upon connection
 
         Raises
         ------
@@ -115,6 +117,9 @@ class sftp:
         if self.private_key:
             self.private_key = io.StringIO(self.private_key)
             self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)
+        self.connect_insecure = connect_insecure if connect_insecure in BOOLEANS else False
+        if self.connect_insecure:
+            logging.info(f'connecting to {self.host} insecurely')
 
         root = '/'
         self.remote_in = self.kp.getcustomproperties('RemoteInDefault')
@@ -144,8 +149,6 @@ class sftp:
         err_text = None
         if not self.host:
             err_text = f"missing host for profile '{self.name}'"
-        # if not self.host_key_type or not self.host_key_value:
-        #     err_text = f"missing host key type and/or value for profile '{self.name}'"
         if not self.usr:
             err_text = f"missing username for profile '{self.name}'"
         if not self.pwd and not self.private_key:
@@ -176,7 +179,7 @@ class sftp:
 
         """
         self.ssh = paramiko.SSHClient()
-        if save_host_key:
+        if save_host_key or self.connect_insecure:
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         else:
             host_key = paramiko.pkey.PKey.from_type_string(self.host_key_type, base64.b64decode(self.host_key_value))
