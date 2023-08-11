@@ -3,7 +3,6 @@ keepassFile: C:/confidential/db.kdbx
 logRoot: C:/logs
 logDelimiter: ","
 suppressDelimiter: "|"
-db_connectionString: Driver={ODBC Driver 17 for SQL Server};Server=ServerName;Database=DatabaseName
 fileproc_referenceFile: C:/reference/directorymonitoring.csv
 fileproc_referenceDelimiter: ","
 archiveDirName: Archive
