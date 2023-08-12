@@ -41,6 +41,10 @@ class sftp:
         Passphrase for the key file, if applicable
     private_key : str
         Actual private key text from the key file, if applicable
+    save_host_key : bool
+        Whether or not to save the host key information
+    connect_insecure : bool
+        Whether to bypass host key verification upon connection
     remote_in : str
         Default remote directory to upload files to. With use root "/" if not provided
     remote_out : str
@@ -65,7 +69,7 @@ class sftp:
         Indicator whether to print progress messages to stdout every 100 files processed
 
     """
-    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None, connect_insecure: bool = False):
+    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None, save_host_key: bool = False, connect_insecure: bool = False):
         """Inits sftp class
 
         Parameters
@@ -76,6 +80,8 @@ class sftp:
             Inidicator if progress should be printed to stdout
         config_file : str, optional (default None)
             Full path location of library configuration file
+        save_host_key : bool, optional (default False)
+            Whether or not to save the host key information
         connect_insecure : bool, optional (default False)
             Whether to bypass host key verification upon connection
 
@@ -117,6 +123,7 @@ class sftp:
         if self.private_key:
             self.private_key = io.StringIO(self.private_key)
             self.private_key = paramiko.RSAKey.from_private_key(self.private_key, self.passphrase)
+        self.save_host_key = save_host_key if save_host_key in BOOLEANS else False
         self.connect_insecure = connect_insecure if connect_insecure in BOOLEANS else False
         if self.connect_insecure:
             logging.info(f'connecting to {self.host} insecurely')
@@ -137,13 +144,23 @@ class sftp:
         self.suppress_out = '' if self.suppress_out is None else self.suppress_out.strip(f"'{suppress_delimiter} '")
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
-        self.ssh = None
         self.log_path = os.path.join(get_config('logRoot', self.config_file), sftp_constants.MODULE_NAME)
         self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
         self.log_delim = get_config('logDelimiter', self.config_file)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
         self._validate_profile()
+
+        self._connectssh()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        self.ssh.close()
+
+    def close(self):
+        self.ssh.close()
 
     def _validate_profile(self):
         err_text = None
@@ -160,13 +177,8 @@ class sftp:
             logging.critical(err_text)
             raise ValueError(err_text)
 
-    def _connectssh(self, save_host_key: bool = False):
+    def _connectssh(self):
         """Connects to the ssh
-
-        Parameters
-        ----------
-        save_host_key : bool, optional (default False)
-            Whether or not to save the host key information
 
         Raises
         ------
@@ -179,7 +191,7 @@ class sftp:
 
         """
         self.ssh = paramiko.SSHClient()
-        if save_host_key or self.connect_insecure:
+        if self.save_host_key or self.connect_insecure:
             self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         else:
             host_key = paramiko.pkey.PKey.from_type_string(self.host_key_type, base64.b64decode(self.host_key_value))
@@ -211,7 +223,7 @@ class sftp:
             logging.critical(f'Unhandled exception {e}|{self.host}')
             raise Exception(f'Unhandled exception {e}|{self.host}') from e
 
-        if save_host_key:
+        if self.save_host_key:
             host_key = self.ssh.get_transport().get_remote_server_key()
             self.kp.writecustomproperty(string_field='HostKeyType', new_value=host_key.get_name(), create_property=True)
             self.kp.writecustomproperty(string_field='HostKeyValue', new_value=host_key.get_base64(), create_property=True)
@@ -238,7 +250,6 @@ class sftp:
         list : All files in the remote directory, or an empty list if no files exist
 
         """
-        self._connectssh()
         with self.ssh.open_sftp() as ftp:
             ftp.chdir(remote_dir)
             dir_list = ftp.listdir_attr(remote_dir)
@@ -294,7 +305,6 @@ class sftp:
         remote_files = remote_files if isinstance(remote_files, list) else []  # convert to empty list if not already a list type
 
         success_list = []
-        self._connectssh(save_host_key=False)
         with self.ssh.open_sftp() as ftp:
             ftp.chdir(remote_dir)
             dir_list = ftp.listdir_attr(remote_dir)
@@ -399,7 +409,6 @@ class sftp:
         if tot_ct > 0:
             archive_dir_name = get_config('archiveDirName', self.config_file)
             local_dir_archive = os.path.join(local_dir, archive_dir_name)
-            self._connectssh(save_host_key=False)
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)
                 for ctr, f in enumerate(upload_files):
