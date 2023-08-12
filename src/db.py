@@ -39,7 +39,8 @@ class db:
 
         """
         self.conn = None
-        if connection_string:
+        self.connection_string = connection_string
+        if self.connection_string:
             self.conn = sql.connect(connection_string)
 
     def close(self):
@@ -49,12 +50,8 @@ class db:
         else:
             raise UnboundLocalError('connection does not exist to close')
 
-    def __enter__(self, connection_string: str = None):
+    def __enter__(self):
         """Opens a db object from a context manager"""
-        self.conn = None
-        if connection_string:
-            self.conn = sql.connect(connection_string)
-
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
