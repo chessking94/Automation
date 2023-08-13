@@ -4,6 +4,7 @@ import fnmatch
 import io
 import logging
 import os
+import re
 import stat
 
 import paramiko
@@ -145,7 +146,7 @@ class sftp:
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
         self.log_path = os.path.join(get_config('logRoot', self.config_file), sftp_constants.MODULE_NAME)
-        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}.log"
+        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}_{re.sub(r'[^a-zA-Z0-9]', '', self.host)}.log"
         self.log_delim = get_config('logDelimiter', self.config_file)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
