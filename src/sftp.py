@@ -275,6 +275,7 @@ class sftp:
         remote_dir: str = None,
         local_dir: str = None,
         remote_files: list | str = None,
+        suppress_override: list | str = None,
         delete_ftp: bool = True,
         write_log: bool = False
     ) -> list:
@@ -288,6 +289,8 @@ class sftp:
             Local directory to download files to. Will use self.local_in if not provided
         remote_files : list or str, optional (default None)
             Specific files or wildcard names to download. Will use all files in remote_dir if not provided
+        suppress_override : list or str, optional (default None)
+            Specific files or wildcard names to suppress from download. Will use all 'self.suppress_in' if not provided
         delete_ftp : bool, optional (default True)
             Indicator if files should be deleted from the SFTP after download is completed
         write_log : bool, optional (default False)
@@ -321,26 +324,43 @@ class sftp:
         remote_files = [remote_files] if isinstance(remote_files, str) else remote_files  # convert single files to a list
         remote_files = remote_files if isinstance(remote_files, list) else []  # convert to empty list if not already a list type
 
+        suppress_override = [suppress_override] if isinstance(suppress_override, str) else suppress_override
+        suppress_override = suppress_override if isinstance(suppress_override, list) else []
+        suppress_list = self.suppress_in if len(suppress_override) == 0 else suppress_override
+
         success_list = []
         with self.ssh.open_sftp() as ftp:
             ftp.chdir(remote_dir)
-            dir_list = ftp.listdir_attr(remote_dir)
-            download_files = []
+            dir_list = [f.filename for f in ftp.listdir_attr(remote_dir) if not stat.S_ISDIR(f.st_mode)]
+            suppress_items = []
             if len(remote_files) == 0:
+                # no specific files passed, figure it out within the script
+                # do not need separate handling of suppress_list because it's just a list iterable
                 for f in dir_list:
-                    if not stat.S_ISDIR(f.st_mode):
-                        for suppress_item in self.suppress_in:
-                            if not fnmatch.fnmatch(f.filename, suppress_item):
-                                download_files.append(f.filename)
-                tot_ct = len(dir_list)
+                    for item in suppress_list:
+                        if fnmatch.fnmatch(f, item):
+                            suppress_items.append(f)
+                download_files = [x for x in dir_list if x not in suppress_items]
             else:
-                for f in dir_list:
-                    if not stat.S_ISDIR(f.st_mode):
-                        for rf in remote_files:
-                            if fnmatch.fnmatch(f.filename, rf):
-                                download_files.append(f.filename)
-                tot_ct = len(download_files)
+                # specific files/wildcards provided, bypass config parameters
+                download_list = []
+                for include_file in remote_files:
+                    match_found = False
+                    for f in dir_list:
+                        if fnmatch.fnmatch(f, include_file):
+                            download_list.append(f)
+                            match_found = True
+                    if not match_found:
+                        logging.info(f"unable to download '{include_file}', file or pattern does not exist in '{remote_dir}'")
 
+                # pull out the files to suppress
+                if len(suppress_list) != 0:
+                    for f in download_list:
+                        for item in suppress_list:
+                            if fnmatch.fnmatch(f, item):
+                                suppress_items.append(f)
+                download_files = [x for x in download_list if x not in suppress_items]
+            tot_ct = len(download_files)
             for ctr, f in enumerate(download_files):
                 remote_file = os.path.join(remote_dir, f).replace('\\', '/')
                 local_file = os.path.join(local_dir, f)
@@ -348,12 +368,19 @@ class sftp:
                 local_file_archive = os.path.join(local_dir, archive_dir_name, f)
                 if not os.path.isfile(local_file):
                     if not os.path.isfile(local_file_archive):
-                        ftp.get(remote_file, local_file)
-                        success_list.append(f)
-                        if write_log:
-                            self._writelog('GET', remote_dir, local_dir, f)
-                        if delete_ftp:
-                            ftp.remove(remote_file)
+                        success = True
+                        try:
+                            ftp.get(remote_file, local_file)
+                        except Exception as e:
+                            success = False
+                            logging.error(f"unable to download '{remote_file}'|{e}")
+
+                        if success:
+                            success_list.append(f)
+                            if write_log:
+                                self._writelog('GET', remote_dir, local_dir, f)
+                            if delete_ftp:
+                                ftp.remove(remote_file)
 
                 if self.track_progress:
                     if (ctr + 1) % 100 == 0:
@@ -412,10 +439,10 @@ class sftp:
         suppress_list = self.suppress_out if len(suppress_override) == 0 else suppress_override
 
         directory_list = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
+        suppress_items = []
         if len(local_files) == 0:
             # no specific files passed, figure it out within the script
             # do not need separate handling of suppress_list because it's just a list iterable
-            suppress_items = []
             for f in directory_list:
                 for item in suppress_list:
                     if fnmatch.fnmatch(f, item):
@@ -435,12 +462,11 @@ class sftp:
 
             # pull out the files to suppress
             if len(suppress_list) != 0:
-                suppress_items = []
                 for f in upload_list:
                     for item in suppress_list:
                         if fnmatch.fnmatch(f, item):
                             suppress_items.append(f)
-                upload_files = [x for x in upload_list if x not in suppress_items]
+            upload_files = [x for x in upload_list if x not in suppress_items]
 
         success_list = []
         tot_ct = len(upload_files)
@@ -457,7 +483,7 @@ class sftp:
                         ftp.put(lf, uf)
                     except Exception as e:
                         success = False
-                        logging.critical(f"unable to upload '{f} to '{remote_dir}'|{e}")
+                        logging.error(f"unable to upload '{f} to '{remote_dir}'|{e}")
 
                     if self.track_progress:
                         if (ctr + 1) % 100 == 0:
