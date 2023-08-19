@@ -1,4 +1,5 @@
 ---
+passwordEnvVar: AUTOMATIONPASSWORD
 keepassFile: C:/confidential/db.kdbx
 logRoot: C:/logs
 logDelimiter: ","

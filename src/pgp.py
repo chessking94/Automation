@@ -68,7 +68,7 @@ class pgp:
         self.config_file = config_file
         kp = keepass(
             filename=get_config('keepassFile', self.config_file),
-            password=os.getenv('AUTOMATIONPASSWORD'),
+            password=os.getenv(get_config('passwordEnvVar', self.config_file)),
             group_title=pgp_constants.MODULE_NAME,
             entry_title=profile_name
         )
