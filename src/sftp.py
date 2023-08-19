@@ -71,7 +71,14 @@ class sftp:
         Indicator whether to print progress messages to stdout every 100 files processed
 
     """
-    def __init__(self, profile_name: str, track_progress: bool = True, config_file: str = None, save_host_key: bool = False, connect_insecure: bool = False):
+    def __init__(
+        self,
+        profile_name: str,
+        track_progress: bool = True,
+        config_file: str = None,
+        save_host_key: bool = False,
+        connect_insecure: bool = False
+    ):
         """Inits sftp class
 
         Parameters
@@ -103,7 +110,7 @@ class sftp:
         self.config_file = config_file
         self.kp = keepass(
             filename=get_config('keepassFile', self.config_file),
-            password=os.getenv('AUTOMATIONPASSWORD'),
+            password=os.getenv(get_config('passwordEnvVar', self.config_file)),
             group_title=sftp_constants.MODULE_NAME,
             entry_title=profile_name
         )
@@ -263,7 +270,14 @@ class sftp:
 
         return file_list
 
-    def download(self, remote_dir: str = None, local_dir: str = None, remote_files: list | str = None, delete_ftp: bool = True, write_log: bool = False) -> list:
+    def download(
+        self,
+        remote_dir: str = None,
+        local_dir: str = None,
+        remote_files: list | str = None,
+        delete_ftp: bool = True,
+        write_log: bool = False
+    ) -> list:
         """Download files from an SFTP
 
         Parameters
@@ -347,7 +361,14 @@ class sftp:
 
         return success_list
 
-    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, suppress_override: list | str = None, write_log: bool = False) -> list:
+    def upload(
+            self,
+            remote_dir: str = None,
+            local_dir: str = None,
+            local_files: list | str = None,
+            suppress_override: list | str = None,
+            write_log: bool = False
+    ) -> list:
         """Upload files to an SFTP
 
         Parameters
