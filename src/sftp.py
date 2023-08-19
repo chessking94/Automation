@@ -4,6 +4,7 @@ import fnmatch
 import io
 import logging
 import os
+import posixpath
 import re
 import stat
 
@@ -146,7 +147,7 @@ class sftp:
         self.suppress_out = self.suppress_out.split(suppress_delimiter)
 
         self.log_path = os.path.join(get_config('logRoot', self.config_file), sftp_constants.MODULE_NAME)
-        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}_{re.sub(r'[^a-zA-Z0-9]', '', self.host)}.log"
+        self.log_name = f"{self.__class__.__name__}_{dt.datetime.now().strftime('%Y%m%d%H%M%S')}_{re.sub(r'[^a-zA-Z0-9]', '', self.name)}.log"
         self.log_delim = get_config('logDelimiter', self.config_file)
         self.track_progress = track_progress if track_progress in BOOLEANS else True
 
@@ -212,7 +213,8 @@ class sftp:
                     username=self.usr,
                     password=self.pwd,
                     pkey=self.private_key,
-                    passphrase=self.passphrase
+                    passphrase=self.passphrase,
+                    disabled_algorithms=dict(pubkeys=['rsa-sha2-512', 'rsa-sha2-256'])
                 )
         except paramiko.AuthenticationException as e:
             logging.critical(paramiko.AuthenticationException(self.host))
@@ -236,7 +238,7 @@ class sftp:
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
             logfile.write(f'{self.name}{self.log_delim}{dte}{self.log_delim}{tme}{self.log_delim}{direction}{self.log_delim}')
-            logfile.write(f'{remote_dir}{self.log_delim}{local_dir}{self.log_delim}{filename}{NL}')
+            logfile.write(f'{remote_dir}{self.log_delim}{local_dir.replace(os.pathsep, posixpath.sep)}{self.log_delim}{filename}{NL}')
 
     def listsftpdir(self, remote_dir: str) -> list:
         """Return a list of files on an SFTP
@@ -345,32 +347,30 @@ class sftp:
 
         return success_list
 
-    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, write_log: bool = False) -> list:
+    def upload(self, remote_dir: str = None, local_dir: str = None, local_files: list | str = None, suppress_override: list | str = None, write_log: bool = False) -> list:
         """Upload files to an SFTP
 
         Parameters
         ----------
         remote_dir : str, optional (default None)
-            Remote directory to upload files to. Will use self.remote_out if not providied
+            Remote directory to upload files to. Will use 'self.remote_out' if not providied
         local_dir : str, optional (default None)
-            Local directory to upload files from. Will use self.local_out if not provided
+            Local directory to upload files from. Will use 'self.local_out' if not provided
         local_files : list or str, optional (default None)
-            Specific files or wildcard names to upload. Will use all files in local_dir if not provided
+            Specific files or wildcard names to upload. Will use all files in 'local_dir' if not provided
+        suppress_override : list or str, optional (default None)
+            Specific files or wildcard names to suppress from upload. Will use all 'self.suppress_out' if not provided
         write_log : bool, optional (default False)
             Indicator if files uploaded should be written to a log file
 
         Returns
         -------
-        list : the basename of the files uploaded
+        list : the basename of the files successfully uploaded
 
         Raises
         ------
         FileNotFoundError
             If 'local_dir' does not exist
-
-        TODO
-        ----
-        Review logic for custom file uploads, seems really ugly and there should be a cleaner approach instead of multiple list iterations
 
         """
         remote_dir = self.remote_out if remote_dir is None else remote_dir
@@ -382,30 +382,46 @@ class sftp:
             logging.critical(err_msg)
             raise FileNotFoundError(err_msg)
 
-        # validate local_files and make sure its the proper data type
-        local_files = [local_files] if isinstance(local_files, str) else local_files  # convert single files to a list
-        local_files = local_files if isinstance(local_files, list) else []  # convert to empty list if not already a list type
+        # validate variables and make sure they the proper data type
+        local_files = [local_files] if isinstance(local_files, str) else local_files
+        local_files = local_files if isinstance(local_files, list) else []
 
-        success_list = []
+        suppress_override = [suppress_override] if isinstance(suppress_override, str) else suppress_override
+        suppress_override = suppress_override if isinstance(suppress_override, list) else []
+        suppress_list = self.suppress_out if len(suppress_override) == 0 else suppress_override
+
         directory_list = [f for f in os.listdir(local_dir) if os.path.isfile(os.path.join(local_dir, f))]
         if len(local_files) == 0:
-            # no specific files passed, use standard config parameters
-            suppress_list = []
+            # no specific files passed, figure it out within the script
+            # do not need separate handling of suppress_list because it's just a list iterable
+            suppress_items = []
             for f in directory_list:
-                for suppress_item in self.suppress_out:
-                    if fnmatch.fnmatch(f, suppress_item):
-                        suppress_list.append(f)
-
-            upload_files = [x for x in directory_list if x not in suppress_list]
+                for item in suppress_list:
+                    if fnmatch.fnmatch(f, item):
+                        suppress_items.append(f)
+            upload_files = [x for x in directory_list if x not in suppress_items]
         else:
             # specific files/wildcards provided, bypass config parameters
             upload_list = []
-            for f in directory_list:
-                for include_file in local_files:
+            for include_file in local_files:
+                match_found = False
+                for f in directory_list:
                     if fnmatch.fnmatch(f, include_file):
                         upload_list.append(f)
-            upload_files = [x for x in upload_list if os.path.isfile(os.path.join(local_dir, x))]
+                        match_found = True
+                if not match_found:
+                    logging.info(f"unable to upload '{include_file}', file or pattern does not exist in '{local_dir.replace(os.pathsep, posixpath.sep)}'")
 
+            # pull out the files to suppress
+            if len(suppress_list) != 0:
+                suppress_items = []
+                for f in upload_list:
+                    for item in suppress_list:
+                        if fnmatch.fnmatch(f, item):
+                            suppress_items.append(f)
+                upload_files = [x for x in upload_list if x not in suppress_items]
+
+        success_list = []
         tot_ct = len(upload_files)
         if tot_ct > 0:
             archive_dir_name = get_config('archiveDirName', self.config_file)
@@ -413,20 +429,27 @@ class sftp:
             with self.ssh.open_sftp() as ftp:
                 ftp.chdir(remote_dir)
                 for ctr, f in enumerate(upload_files):
+                    success = True
                     lf = os.path.join(local_dir, f)
-                    uf = remote_dir + '/' + f if remote_dir[-1] != '/' else remote_dir + f  # ok to hard-code / here, it's sftp
-                    ftp.put(lf, uf)
+                    uf = remote_dir + posixpath.sep + f if remote_dir[-1] != posixpath.sep else remote_dir + f  # ensure a trailing path separator exists
+                    try:
+                        ftp.put(lf, uf)
+                    except Exception as e:
+                        success = False
+                        logging.critical(f"unable to upload '{f} to '{remote_dir}'|{e}")
 
-                    success_list.append(f)
                     if self.track_progress:
                         if (ctr + 1) % 100 == 0:
                             logging.info(f'{ctr + 1} files processed out of {tot_ct}')
 
-                    if write_log:
-                        self._writelog('PUT', remote_dir, local_dir, f)
+                    if success:
+                        success_list.append(f)
 
-                    if os.path.isdir(local_dir_archive):
-                        archive_name = os.path.join(local_dir_archive, f)
-                        os.rename(lf, archive_name)
+                        if write_log:
+                            self._writelog('PUT', remote_dir, local_dir, f)
+
+                        if os.path.isdir(local_dir_archive):
+                            archive_name = os.path.join(local_dir_archive, f)
+                            os.rename(lf, archive_name)
 
         return success_list
