@@ -10,7 +10,7 @@ FILE_DIR = os.path.join(os.path.dirname(__file__), 'files', 'secrets')
 class TestKeepass(unittest.TestCase):
     def setUp(self):
         self.filename = get_config('keepassFile', os.getenv('CONFIGFILE'))
-        self.password = os.getenv(get_config('passwordEnvVar', self.config_file)),
+        self.password = os.getenv(get_config('passwordEnvVar'))
         self.group_title = 'test'
         self.entry_title = 'Testing Entry'
 

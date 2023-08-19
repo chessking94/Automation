@@ -14,7 +14,6 @@ class TestSftp(unittest.TestCase):
     def test_normal_connection(self, mock_sshclient):
         sftp_conn = sftp.sftp('Test Normal')
         ssh_client = mock_sshclient.return_value
-        sftp_conn._connectssh()
 
         ssh_client.connect.assert_called_with(
             hostname=sftp_conn.host,
@@ -27,7 +26,6 @@ class TestSftp(unittest.TestCase):
     def test_key_connection(self, mock_sshclient):
         sftp_conn = sftp.sftp('Test Key')
         ssh_client = mock_sshclient.return_value
-        sftp_conn._connectssh()
 
         ssh_client.connect.assert_called_with(
             hostname=sftp_conn.host,
@@ -35,7 +33,8 @@ class TestSftp(unittest.TestCase):
             username=sftp_conn.usr,
             password=sftp_conn.pwd,
             pkey=sftp_conn.private_key,
-            passphrase=sftp_conn.passphrase
+            passphrase=sftp_conn.passphrase,
+            disabled_algorithms=dict(pubkeys=['rsa-sha2-512', 'rsa-sha2-256'])
         )
 
     @patch('paramiko.SSHClient')
@@ -45,7 +44,6 @@ class TestSftp(unittest.TestCase):
         ssh_client = mock_sshclient.return_value
         sftp_client = MagicMock()
         ssh_client.open_sftp.return_value = sftp_client
-        sftp_conn._connectssh()
 
         self.assertRaises(FileNotFoundError, sftp_conn.download, None, bad_path, False, False)
 
@@ -65,7 +63,6 @@ class TestSftp(unittest.TestCase):
         ssh_client = mock_sshclient.return_value
         sftp_client = MagicMock()
         ssh_client.open_sftp.return_value = sftp_client
-        sftp_conn._connectssh()
         self.assertRaises(FileNotFoundError, sftp_conn.upload, None, bad_path, None, False)
 
     # TODO: Figure this mess out. It's beyond my understanding right now
