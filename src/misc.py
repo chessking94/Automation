@@ -3,6 +3,7 @@ import csv
 import json
 import logging
 import os
+import re
 import traceback
 import yaml
 
@@ -115,7 +116,7 @@ def log_exception(exctype, value, tb):
     """
 
     write_val = {
-        'type': str(exctype),
+        'type': re.sub(r'<|>', '', str(exctype)),  # remove < and > since it messes up converting to HTML for potential email notifications
         'description': str(value),
         'traceback': str(traceback.format_tb(tb, 10))
     }
