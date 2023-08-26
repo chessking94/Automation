@@ -23,6 +23,8 @@ class ftp:
     ----------
     config_file : str
         Full path location of library configuration file
+    use_tls : bool
+        Whether or not TLS should be used
     name : str
         Name of the FTP profile to connect to
     host : str
@@ -33,10 +35,6 @@ class ftp:
         Username to connect with
     pwd : str
         Password to connect with
-    save_host_key : bool
-        Whether or not to save the host key information
-    connect_insecure : bool
-        Whether to bypass host key verification upon connection
     remote_in : str
         Default remote directory to upload files to. With use root "/" if not provided
     remote_out : str
@@ -98,8 +96,6 @@ class ftp:
         self.name = profile_name
         self.use_tls = use_tls if use_tls in BOOLEANS else True
         self.host = self.kp.getgeneral('url')
-        self.host_key_type = self.kp.getcustomproperties('HostKeyType')
-        self.host_key_value = self.kp.getcustomproperties('HostKeyValue')
         self.port = self.kp.getcustomproperties('Port')
         try:
             self.port = int(self.port)

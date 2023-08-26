@@ -305,10 +305,6 @@ class sftp:
         FileNotFoundError
             If 'local_dir' does not exist
 
-        TODO
-        ----
-        Review logic for custom file downloads, seems really ugly and there should be a cleaner approach instead of multiple list iterations
-
         """
         remote_dir = self.remote_in if remote_dir is None else remote_dir
         local_dir = self.local_in if local_dir is None else local_dir
@@ -360,6 +356,7 @@ class sftp:
                             if fnmatch.fnmatch(f, item):
                                 suppress_items.append(f)
                 download_files = [x for x in download_list if x not in suppress_items]
+
             tot_ct = len(download_files)
             for ctr, f in enumerate(download_files):
                 remote_file = os.path.join(remote_dir, f).replace('\\', '/')
