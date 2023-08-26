@@ -1,5 +1,6 @@
 import logging
 import os
+import shlex
 import shutil
 import subprocess
 import time
@@ -48,7 +49,9 @@ class db:
         if self.conn:
             self.conn.close()
         else:
-            raise UnboundLocalError('connection does not exist to close')
+            err_msg = 'connection does not exist to close'
+            logging.critical(err_msg)
+            raise UnboundLocalError(err_msg)
 
     def __enter__(self):
         """Opens a db object from a context manager"""
@@ -78,7 +81,9 @@ class db:
 
         """
         if not self.conn:
-            raise TypeError('connection does not exist')
+            err_msg = 'connection does not exist'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
         qry_text = f"""
 SELECT
@@ -124,7 +129,9 @@ WHERE job.name = '{job_name}'
 
         """
         if not self.conn:
-            raise TypeError('connection does not exist')
+            err_msg = 'connection does not exist'
+            logging.critical(err_msg)
+            raise TypeError(err_msg)
 
         wait_for_completion = wait_for_completion if wait_for_completion in BOOLEANS else False
         csr = self.conn.cursor()
@@ -166,27 +173,44 @@ WHERE job.name = '{job_name}'
 
         """
         if not os.path.isdir(root_path):
-            raise FileNotFoundError(f"path '{root_path}' does not exist")
+            err_msg = f"path '{root_path}' does not exist"
+            logging.critical(err_msg)
+            raise FileNotFoundError(err_msg)
 
         try:
             subprocess.run(['mssql-scripter', '--version'], shell=True)
         except FileNotFoundError:
-            raise FileNotFoundError('mssql-scripter is not installed in the environment')
+            err_msg = 'mssql-scripter is not installed in the environment'
+            logging.critical(err_msg)
+            raise FileNotFoundError(err_msg)
 
         output_path = os.path.join(root_path, database)
         if os.path.isdir(output_path):
             shutil.rmtree(output_path)
-        os.mkdir(output_path)
 
-        cmd_text = f'mssql-scripter -S {server} -d {database}'
+        # apparently rmtree doesn't release the directory rights immediately, need to keep trying
+        ct = 0
+        while True:
+            try:
+                os.mkdir(output_path)
+                break
+            except PermissionError:
+                time.sleep(1)
+                ct += 1
+                if ct == 10:
+                    logging.critical(f"unable to create directory '{output_path}'")
+                    raise PermissionError
+                else:
+                    continue
+
+        cmd_text = f'mssql-scripter -S "{server}" -d "{database}"'
         cmd_text = cmd_text + ' --file-per-object'
         cmd_text = cmd_text + ' --script-create'
         cmd_text = cmd_text + ' --collation'
         cmd_text = cmd_text + ' --exclude-headers'
         cmd_text = cmd_text + ' --display-progress'
         cmd_text = cmd_text + f' -f {output_path}'
-        if os.getcwd != root_path:
-            os.chdir(root_path)
-        rtnval = os.system('cmd /C ' + cmd_text)
+        cmd = shlex.split(cmd_text, posix=False)
+        r = subprocess.run(cmd, shell=True, cwd=root_path)
 
-        return rtnval
+        return r.returncode
