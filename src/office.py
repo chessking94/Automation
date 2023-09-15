@@ -362,9 +362,10 @@ class excel():
                 if pt.PivotCache().RecordCount == 0:
                     pt.RefreshTable()
 
+        excel.CalculateUntilAsyncQueriesDone()  # force Excel to not proceed until all refreshes are complete
         output_file = filename
         if save_copy:
-            new_filename = f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}'
+            new_filename = os.path.normpath(f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}')
             wb.SaveAs(new_filename)
             output_file = new_filename
         else:
@@ -420,10 +421,11 @@ class excel():
         else:
             excel.Application.Run(macro_name)
 
+        excel.CalculateUntilAsyncQueriesDone()  # force Excel to not proceed until all refreshes are complete
         output_file = filename
         if save_copy:
             dte = dt.datetime.now().strftime('%Y%m%d %H%M')
-            new_filename = f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}'
+            new_filename = os.path.normpath(f'{os.path.splitext(filename)[0]} {dte}{os.path.splitext(filename)[1]}')
             wb.SaveAs(new_filename)
             output_file = new_filename
         else:
