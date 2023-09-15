@@ -167,7 +167,7 @@ class ftp:
         with open(os.path.join(self.log_path, self.log_name), 'a') as logfile:
             dte, tme = dt.datetime.now().strftime('%Y-%m-%d'), dt.datetime.now().strftime('%H:%M:%S')
             logfile.write(f'{self.name}{self.log_delim}{dte}{self.log_delim}{tme}{self.log_delim}{direction}{self.log_delim}')
-            logfile.write(f'{remote_dir}{self.log_delim}{local_dir.replace(os.pathsep, posixpath.sep)}{self.log_delim}{filename}{NL}')
+            logfile.write(f'{remote_dir}{self.log_delim}{local_dir.replace(os.sep, posixpath.sep)}{self.log_delim}{filename}{NL}')
 
     def listftpdir(self, remote_dir: str) -> list:
         """Return a list of files/folders on an FTP
@@ -378,7 +378,7 @@ class ftp:
                         upload_list.append(f)
                         match_found = True
                 if not match_found:
-                    logging.info(f"unable to upload '{include_file}', file or pattern does not exist in '{local_dir.replace(os.pathsep, posixpath.sep)}'")
+                    logging.info(f"unable to upload '{include_file}', file or pattern does not exist in '{local_dir.replace(os.sep, posixpath.sep)}'")
 
             # pull out the files to suppress
             if len(suppress_list) != 0:
