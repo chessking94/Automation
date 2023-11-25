@@ -97,7 +97,7 @@ class convert():
             else:
                 df_filtered = df.iloc[:, columns]
             df_filtered.to_csv(output_file, index=False)
-        elif ext in ['.xlsx', '.xls', '.xlsm']:
+        elif ext in ['.xlsx', '.xlsm']:
             df = pd.read_excel(filename, engine='openpyxl')
             if isstr:
                 df_filtered = df[columns]
