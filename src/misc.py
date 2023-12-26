@@ -4,7 +4,6 @@ import datetime as dt
 import json
 import logging
 import os
-from pathlib import Path
 import re
 import sys
 import traceback
@@ -143,7 +142,6 @@ def initiate_logging(script_name: str, config_file: str) -> str:
     str : Full path of the log file being written to
 
     """
-    script_name = Path(__file__).stem
     log_root = get_config('logRoot', config_file)
 
     dte = dt.datetime.now().strftime('%Y%m%d%H%M%S')
