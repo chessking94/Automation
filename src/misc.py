@@ -1,9 +1,12 @@
 from collections import defaultdict
 import csv
+import datetime as dt
 import json
 import logging
 import os
+from pathlib import Path
 import re
+import sys
 import traceback
 import yaml
 
@@ -121,3 +124,71 @@ def log_exception(exctype, value, tb):
         'traceback': str(traceback.format_tb(tb, 10))
     }
     logging.critical(str(write_val))
+
+
+def initiate_logging(script_name: str, config_file: str) -> str:
+    """Initiate standard logging
+
+    Set-up base logging configuration
+
+    Parameters
+    ----------
+    script_name : str
+        Name of the script logging is being initiated from. Can be called via 'pathlib.Path(__file__).stem'
+    config_file : str
+        Full path of a configuration file for the script calling this function
+
+    Returns
+    -------
+    str : Full path of the log file being written to
+
+    """
+    script_name = Path(__file__).stem
+    log_root = get_config('logRoot', config_file)
+
+    dte = dt.datetime.now().strftime('%Y%m%d%H%M%S')
+    log_name = f'{script_name}_{dte}.log'
+    log_file = os.path.join(log_root, log_name)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s\t%(funcName)s\t%(levelname)s\t%(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler(sys.stdout)
+        ]
+    )
+
+    sys.excepthook = log_exception  # force unhandled exceptions to write to the log file
+
+    return log_file
+
+
+def list_to_html(data: list, has_header: bool = True) -> str:
+    """Convert a list to an HTML table
+
+    Based on https://stackoverflow.com/a/52785746
+
+    Parameters
+    ----------
+    data : list
+        The list to convert to a table
+    has_header : bool, optional (default True)
+        An indicator if the first element of the list is a header
+
+    Returns
+    -------
+    str : The requested HTML table
+
+    """
+
+    html = '<table border="1">'
+    for i, row in enumerate(data):
+        if has_header and i == 0:
+            tag = 'th'
+        else:
+            tag = 'td'
+        tds = ''.join('<{}>{}</{}>'.format(tag, cell, tag) for cell in row)
+        html += '<tr>{}</tr>'.format(tds)
+    html += '</table>'
+
+    return html
