@@ -16,8 +16,8 @@ setup(
     package_dir={'automation': 'src'},
     test_suite='test',
     install_requires=[
-        'pandas>=2.1.3',
-        'paramiko>=3.3.1',
+        'pandas>=2.1.4',
+        'paramiko>=3.4.0',
         'PGPy>=0.6.0',
         'pykeepass>=4.0.6',
         'pyodbc>=5.0.1',
