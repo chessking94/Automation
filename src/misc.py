@@ -9,7 +9,7 @@ import sys
 import traceback
 import yaml
 
-from . import VALID_DELIMS
+from . import VALID_DELIMS, BOOLEANS
 
 
 def get_config(key: str, config_file: str = None) -> str:
@@ -125,7 +125,7 @@ def log_exception(exctype, value, tb):
     logging.critical(str(write_val))
 
 
-def initiate_logging(script_name: str, config_file: str) -> str:
+def initiate_logging(script_name: str, config_file: str, write_file: bool = True) -> str:
     """Initiate standard logging
 
     Set-up base logging configuration
@@ -136,6 +136,8 @@ def initiate_logging(script_name: str, config_file: str) -> str:
         Name of the script logging is being initiated from. Can be called via 'pathlib.Path(__file__).stem'
     config_file : str
         Full path of a configuration file for the script calling this function
+    write_file : bool (default True)
+        Indicator if the logs should be written to file or not
 
     Returns
     -------
@@ -147,13 +149,13 @@ def initiate_logging(script_name: str, config_file: str) -> str:
     dte = dt.datetime.now().strftime('%Y%m%d%H%M%S')
     log_name = f'{script_name}_{dte}.log'
     log_file = os.path.join(log_root, log_name)
+    log_handlers = [logging.StreamHandler(sys.stdout)]
+    if write_file or write_file not in BOOLEANS:
+        log_handlers.append(logging.FileHandler(log_file))
     logging.basicConfig(
         level=logging.INFO,
         format='%(asctime)s\t%(funcName)s\t%(levelname)s\t%(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler(sys.stdout)
-        ]
+        handlers=log_handlers
     )
 
     sys.excepthook = log_exception  # force unhandled exceptions to write to the log file
