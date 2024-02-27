@@ -20,9 +20,9 @@ setup(
         'paramiko>=3.4.0',
         'PGPy>=0.6.0',
         'pykeepass>=4.0.6',
-        'pyodbc>=5.0.1',
         'pywin32>=306',
         'PyYAML>=6.0.1',
+        'sqlalchemy>=2.0.27',
         'XlsxWriter>=3.1.9'
     ]
 )
