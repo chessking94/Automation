@@ -6,7 +6,7 @@ import subprocess
 import time
 
 import pandas as pd
-import pyodbc as sql
+import sqlalchemy as sa
 
 from . import BOOLEANS
 
@@ -39,15 +39,22 @@ class db:
             Connection string of the database to connect to. Will skip connection if not provided.
 
         """
+        self.engine = None
         self.conn = None
         self.connection_string = connection_string
+        self.connection_url = sa.engine.URL.create(
+            drivername='mssql+pyodbc',
+            query={"odbc_connect": connection_string}
+        )
         if self.connection_string:
-            self.conn = sql.connect(connection_string)
+            self.engine = sa.create_engine(self.connection_url)
+            self.conn = self.engine.connect().connection
 
     def close(self):
         """Closes a db object"""
         if self.conn:
             self.conn.close()
+            self.engine.dispose()
         else:
             err_msg = 'connection does not exist to close'
             logging.critical(err_msg)
@@ -61,6 +68,7 @@ class db:
         """Closes a db object opened with a context manager"""
         if self.conn:
             self.conn.close()
+            self.engine.dispose()
 
     def _is_job_running(self, job_name: str) -> bool:
         """Determines if a SQL Server job is still running
@@ -77,10 +85,10 @@ class db:
         Raises
         ------
         TypeError
-            If no connection exists
+            If no engine exists
 
         """
-        if not self.conn:
+        if not self.engine:
             err_msg = 'connection does not exist'
             logging.critical(err_msg)
             raise TypeError(err_msg)
@@ -104,7 +112,7 @@ JOIN (
 WHERE job.name = '{job_name}'
     """
         logging.debug(qry_text)
-        return bool(int(pd.read_sql(qry_text, self.conn).values[0][0]))
+        return bool(int(pd.read_sql(qry_text, self.engine).values[0][0]))
 
     def run_job(self, job_name: str, wait_for_completion: bool = False) -> bool:
         """Executes a SQL Server job
@@ -125,10 +133,10 @@ WHERE job.name = '{job_name}'
         Raises
         ------
         TypeError
-            If no connection exists
+            If no engine exists
 
         """
-        if not self.conn:
+        if not self.engine:
             err_msg = 'connection does not exist'
             logging.critical(err_msg)
             raise TypeError(err_msg)

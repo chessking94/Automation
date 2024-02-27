@@ -236,6 +236,11 @@ class convert():
             If 'delim' is not in a predefined list
             If the extension of the Excel file is not in a predefined list
 
+        TODO
+        ----
+        An integer/float/number column in the Excel file is written with a trailing decimal. i.e. 123 -> 123.0. Eliminate this
+        Empty columns formatted as "General" are being converted to 'nan' - maybe only happens with badly structure files
+
         """
         if not os.path.isfile(filename):
             raise FileNotFoundError
